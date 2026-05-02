@@ -33,7 +33,6 @@ if not exist "%APP_ROOT%\downloads\temp"  mkdir "%APP_ROOT%\downloads\temp"
 exit /b 0
 
 :ensure_shortcut
-if exist "%SHORTCUT_PATH%" exit /b 0
 if not exist "%ICON_PATH%" exit /b 0
 
 :next_temp_file
