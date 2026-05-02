@@ -20,8 +20,10 @@ const DANGEROUS_PATTERNS = [
 ];
 
 function hasPathSegment(pathname, prefix, minValueLength = 1) {
-  if (!pathname.startsWith(prefix)) return false;
-  const remainder = pathname.slice(prefix.length).split('/')[0];
+  const normalizedPath = String(pathname || '').toLowerCase();
+  const normalizedPrefix = String(prefix || '').toLowerCase();
+  if (!normalizedPath.startsWith(normalizedPrefix)) return false;
+  const remainder = normalizedPath.slice(normalizedPrefix.length).split('/')[0];
   return remainder.length >= minValueLength;
 }
 
@@ -131,7 +133,7 @@ function normalizeYouTubeUrl(url, type = null) {
   const hasVideosTab = /\/videos$/i.test(pathname);
   const hasSpecificTab = /\/(videos|streams|shorts|playlists|featured)$/i.test(pathname);
 
-  if (!hasVideosTab && !hasSpecificTab && isChannelPath(pathname.toLowerCase())) {
+  if (!hasVideosTab && !hasSpecificTab && isChannelPath(pathname)) {
     parsed.pathname = `${pathname}/videos`;
   }
 

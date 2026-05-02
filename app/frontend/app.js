@@ -425,7 +425,7 @@ function getBatchLabel(meta = null, url = '') {
 }
 
 function getPreferredBatchLimit() {
-  const advancedLimit = parseInt(document.getElementById('playlistLimit') && document.getElementById('playlistLimit').value, 10);
+  const advancedLimit = parseInt(document.getElementById('playlistLimit')?.value, 10);
   if (Number.isInteger(advancedLimit) && advancedLimit >= 0) {
     return advancedLimit;
   }

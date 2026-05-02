@@ -125,7 +125,7 @@ function fetchMetadata(url, binDir, options = {}) {
           _type: meta._type || requestedType || 'video'
         };
         if (!formatted.thumbnail && Array.isArray(meta.thumbnails) && meta.thumbnails.length > 0) {
-          formatted.thumbnail = meta.thumbnails[meta.thumbnails.length - 1].url || null;
+          formatted.thumbnail = meta.thumbnails[meta.thumbnails.length - 1]?.url || null;
         }
         resolve(formatted);
       } catch (parseErr) {
