@@ -165,7 +165,7 @@ function setupUIListeners() {
   btnQueue.addEventListener('click', () => {
     const url = urlInput.value.trim();
     if (!url) return;
-    addToQueue(url, getDownloadOptions());
+    downloadCurrent(url);
   });
 
   // Format/quality intelligence
@@ -245,7 +245,8 @@ function setupUIListeners() {
   // Playlist dialog
   if (btnPlaylistConfirm) {
     btnPlaylistConfirm.addEventListener('click', () => {
-      const count = parseInt(document.getElementById('playlistItemCount').value, 10) || 5;
+      const rawCount = parseInt(document.getElementById('playlistItemCount').value, 10);
+      const count = Number.isInteger(rawCount) && rawCount >= 0 ? rawCount : getPreferredBatchLimit();
       const dialog = document.getElementById('playlistDialog');
       const url = dialog.dataset.pendingUrl;
       if (url) {
@@ -298,12 +299,12 @@ async function fetchVideoInfo(url) {
     state.currentMetadata = metadata;
     state.currentUrl = url;
 
-    if (metadata._type === 'playlist' || metadata.playlist_count) {
-      showPlaylistDialog(url, metadata);
-    } else {
-      renderPreview(metadata);
-      document.getElementById('btnDownload').disabled = false;
-      document.getElementById('btnQueue').disabled = false;
+    renderPreview(metadata);
+    document.getElementById('btnDownload').disabled = false;
+    document.getElementById('btnQueue').disabled = false;
+    if (isBatchSource(url, metadata)) {
+      const batchLabel = getBatchLabel(metadata, url);
+      showNotification(`${batchLabel} detected. Choose Download or Add to Queue to batch-fetch videos.`, 'info', 5000);
     }
   } catch (err) {
     showNotification(`Fetch failed: ${err.message}`, 'error');
@@ -345,21 +346,28 @@ function renderPreview(meta) {
   }
 
   title.textContent = meta.title || 'Unknown Title';
-  channel.textContent = meta.channel || '';
+  channel.textContent = meta.channel || (meta.requestedType === 'channel' ? 'Channel batch download' : '');
   duration.textContent = meta.durationString || formatDuration(meta.duration);
 
   let type = 'VIDEO';
   if (meta.webpage_url && meta.webpage_url.includes('/shorts/')) type = 'SHORTS';
-  else if (meta._type === 'playlist') type = 'PLAYLIST';
+  else if (meta.requestedType === 'channel') type = 'CHANNEL';
+  else if (meta.requestedType === 'playlist' || meta._type === 'playlist') type = 'PLAYLIST';
   else if (meta.is_live) type = 'LIVE';
   badge.textContent = type;
 
-  if (meta.view_count) {
+  if (meta.playlist_count) {
+    views.textContent = `${formatNumber(meta.playlist_count)} videos`;
+  } else if (meta.view_count) {
     views.textContent = `${formatNumber(meta.view_count)} views`;
+  } else {
+    views.textContent = '';
   }
   if (meta.upload_date && meta.upload_date.length === 8) {
     const d = meta.upload_date;
     date.textContent = `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`;
+  } else {
+    date.textContent = '';
   }
 
   card.style.display = 'flex';
@@ -376,9 +384,14 @@ function hidePreview() {
 function showPlaylistDialog(url, meta) {
   const dialog = document.getElementById('playlistDialog');
   const body = document.getElementById('playlistDialogBody');
+  const playlistItemCount = document.getElementById('playlistItemCount');
+  const batchLabel = getBatchLabel(meta, url).toLowerCase();
   dialog.dataset.pendingUrl = url;
   const count = meta.playlist_count ? ` (${meta.playlist_count} videos found)` : '';
-  body.textContent = `This URL points to a playlist${count}. How many videos would you like to download?`;
+  body.textContent = `This URL points to a ${batchLabel}${count}. How many videos would you like to download?`;
+  if (playlistItemCount) {
+    playlistItemCount.value = getPreferredBatchLimit();
+  }
   dialog.style.display = 'block';
 }
 
@@ -389,13 +402,37 @@ async function downloadCurrent(url) {
   const opts = getDownloadOptions();
   opts.title = state.currentMetadata ? state.currentMetadata.title : 'Downloading...';
 
-  // Show playlist dialog if URL is a playlist
-  if (url.includes('list=') && !url.includes('watch?v=')) {
+  if (isBatchSource(url, state.currentMetadata)) {
     showPlaylistDialog(url, state.currentMetadata || {});
     return;
   }
 
   await addToQueue(url, opts);
+}
+
+function isBatchSource(url, meta = null) {
+  if (meta && (meta.requestedType === 'playlist' || meta.requestedType === 'channel')) {
+    return true;
+  }
+  return /(list=)|youtube\.com\/(@|channel\/|c\/|user\/)/i.test(url);
+}
+
+function getBatchLabel(meta = null, url = '') {
+  if (meta && meta.requestedType === 'channel') return 'Channel';
+  if (meta && meta.requestedType === 'playlist') return 'Playlist';
+  if (/youtube\.com\/(@|channel\/|c\/|user\/)/i.test(url || '')) return 'Channel';
+  return 'Playlist';
+}
+
+function getPreferredBatchLimit() {
+  const advancedLimit = parseInt(document.getElementById('playlistLimit')?.value, 10);
+  if (Number.isInteger(advancedLimit) && advancedLimit >= 0) {
+    return advancedLimit;
+  }
+  if (Number.isInteger(state.config.playlistLimit) && state.config.playlistLimit >= 0) {
+    return state.config.playlistLimit;
+  }
+  return 10;
 }
 
 async function addToQueue(url, options = {}) {
@@ -407,6 +444,7 @@ async function addToQueue(url, options = {}) {
         url,
         format: options.format || 'mp4',
         quality: options.quality || 'best',
+        playlistLimit: options.playlistLimit,
         saveThumbnail: options.saveThumbnail || false,
         saveInfoJson: options.saveInfoJson || false,
         saveSubtitles: options.saveSubtitles || false,
@@ -432,6 +470,7 @@ function getDownloadOptions() {
   return {
     format: document.getElementById('formatSelect').value,
     quality: document.getElementById('qualitySelect').value,
+    playlistLimit: getPreferredBatchLimit(),
     saveThumbnail: document.getElementById('toggleThumbnail').checked,
     saveInfoJson: document.getElementById('toggleInfoJson').checked,
     saveSubtitles: document.getElementById('toggleSubtitles').checked
@@ -806,7 +845,7 @@ function applySettingsToUI() {
   if (formatSelect && cfg.defaultFormat) formatSelect.value = cfg.defaultFormat;
   if (qualitySelect && cfg.defaultQuality) qualitySelect.value = cfg.defaultQuality;
   if (document.getElementById('playlistLimit')) {
-    document.getElementById('playlistLimit').value = cfg.playlistLimit || 10;
+    document.getElementById('playlistLimit').value = cfg.playlistLimit != null ? cfg.playlistLimit : 10;
   }
 }
 
@@ -842,7 +881,10 @@ async function saveSettings() {
     shortsFolder: getVal('cfgShortsFolder'),
     defaultFormat: getVal('cfgDefaultFormat'),
     defaultQuality: getVal('cfgDefaultQuality'),
-    playlistLimit: parseInt(getVal('cfgPlaylistLimit'), 10) || 10,
+    playlistLimit: (() => {
+      const parsed = parseInt(getVal('cfgPlaylistLimit'), 10);
+      return Number.isInteger(parsed) && parsed >= 0 ? parsed : 10;
+    })(),
     saveThumbnail: getChecked('cfgSaveThumbnail'),
     saveSubtitles: getChecked('cfgSaveSubtitles'),
     saveInfoJson: getChecked('cfgSaveInfoJson'),

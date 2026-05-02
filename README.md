@@ -14,8 +14,9 @@ A portable YouTube downloader that runs entirely from a USB drive or external di
 2. Download **yt-dlp.exe** from [github.com/yt-dlp/yt-dlp/releases](https://github.com/yt-dlp/yt-dlp/releases) → place in `bin/`
 3. Download **ffmpeg.exe** and **ffprobe.exe** from [gyan.dev/ffmpeg/builds](https://www.gyan.dev/ffmpeg/builds/) or [BtbN builds](https://github.com/BtbN/FFmpeg-Builds/releases) → place in `bin/`
 4. Install Node.js (one-time, from [nodejs.org](https://nodejs.org)) if not already installed
-5. Open a terminal in this folder and run: `npm install`
-6. Double-click `start.bat` or run `npm start`
+5. Double-click `runme.cmd` (or `start.bat`)
+
+The launcher will automatically run `npm install` the first time on each machine, create a `Run AbyssFetch` shortcut with the included icon, then open the app.
 
 ### Developer Mode
 
@@ -60,6 +61,7 @@ abyssfetch/
 ├── main.js                   ← Electron main process
 ├── preload.js                ← Electron preload (contextBridge)
 ├── package.json
+├── runme.cmd                 ← One-click Windows launcher
 ├── start.bat                 ← Windows launcher script
 └── README.md
 ```
@@ -71,7 +73,7 @@ abyssfetch/
 1. **Electron** wraps the app in a native desktop window
 2. **Express** runs a local-only API server on `127.0.0.1:57315` — not accessible from the network
 3. The **frontend** (pure HTML/CSS/JS) communicates with the backend via `fetch` and Server-Sent Events
-4. **yt-dlp** does all the heavy lifting — metadata fetching and downloading
+4. **yt-dlp** does all the heavy lifting — metadata fetching and downloading for videos, playlists, and channel batches
 5. **ffmpeg** merges video+audio streams for MP4/WEBM output
 6. Progress is streamed in real-time to the UI via SSE
 
@@ -108,13 +110,13 @@ abyssfetch/
 # 1. Navigate to the app folder
 cd /path/to/abyssfetch
 
-# 2. Install Node.js dependencies
-npm install
-
-# 3. Start the app
-npm start
-# or on Windows:
+# 2. Install Node.js once if needed, then launch
+runme.cmd
+# or:
 start.bat
+# or manually:
+npm install
+npm start
 ```
 
 ---
@@ -159,7 +161,7 @@ Check `portable/logs/app.log` and `portable/logs/downloads.log` for detailed err
 - **Windows only** for portable `.exe` builds (Linux/macOS work in dev mode)
 - **No browser cookies** — age-restricted or member-only videos cannot be downloaded
 - **No simultaneous downloads** — queue processes one item at a time
-- **Playlists** — large playlists may take a long time; use the playlist limit setting
+- **Playlists / channels** — large batch downloads may take a long time; use the playlist limit setting or set it to `0` for everything
 - **Live streams** — live videos cannot be downloaded while streaming
 - **DRM content** — DRM-protected content cannot be downloaded (by design)
 

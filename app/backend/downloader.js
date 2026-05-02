@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const logger = require('./logger');
+const validator = require('./validator');
 
 // Map jobId -> spawned child process
 const activeProcesses = new Map();
@@ -53,16 +54,32 @@ function checkTool(binDir, toolName) {
 /**
  * Fetch video metadata using yt-dlp --dump-json.
  */
-function fetchMetadata(url, binDir) {
+function isCollectionType(type) {
+  return type === 'playlist' || type === 'channel';
+}
+
+function fetchMetadata(url, binDir, options = {}) {
   return new Promise((resolve, reject) => {
+    const requestedType = options.requestedType || validator.validateYouTubeUrl(url).type;
+    const normalizedUrl = validator.normalizeYouTubeUrl(url, requestedType);
     const bin = resolveBin(binDir, 'yt-dlp');
-    const args = [
-      '--dump-json',
-      '--no-playlist',
-      '--no-warnings',
-      '--skip-download',
-      url
-    ];
+    const args = isCollectionType(requestedType)
+      ? [
+          '--dump-single-json',
+          '--flat-playlist',
+          '--playlist-end',
+          '1',
+          '--no-warnings',
+          '--skip-download',
+          normalizedUrl
+        ]
+      : [
+          '--dump-json',
+          '--no-playlist',
+          '--no-warnings',
+          '--skip-download',
+          normalizedUrl
+        ];
 
     const child = spawn(bin, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -95,7 +112,7 @@ function fetchMetadata(url, binDir) {
           duration: meta.duration || 0,
           durationString: meta.duration_string || formatDuration(meta.duration),
           thumbnail: meta.thumbnail || null,
-          webpage_url: meta.webpage_url || url,
+          webpage_url: meta.webpage_url || normalizedUrl,
           is_live: !!meta.is_live,
           filesize_approx: meta.filesize_approx || null,
           view_count: meta.view_count || 0,
@@ -103,8 +120,13 @@ function fetchMetadata(url, binDir) {
           description: (meta.description || '').slice(0, 500),
           formats: summarizeFormats(meta.formats || []),
           playlist_count: meta.playlist_count || null,
-          _type: meta._type || 'video'
+          requestedType,
+          entry_count: Array.isArray(meta.entries) ? meta.entries.length : null,
+          _type: meta._type || requestedType || 'video'
         };
+        if (!formatted.thumbnail && Array.isArray(meta.thumbnails) && meta.thumbnails.length > 0) {
+          formatted.thumbnail = meta.thumbnails[meta.thumbnails.length - 1]?.url || null;
+        }
         resolve(formatted);
       } catch (parseErr) {
         reject(new Error(`Failed to parse yt-dlp output: ${parseErr.message}`));
@@ -194,6 +216,14 @@ function buildArgs(job, cfg, appRoot) {
     args.push('--write-subs', '--write-auto-subs', '--sub-langs', 'en.*');
   }
 
+  const isCollection = isCollectionType(job.urlType);
+  if (isCollection) {
+    args.push('--yes-playlist');
+    if (Number.isInteger(job.playlistLimit) && job.playlistLimit > 0) {
+      args.push('--playlist-end', String(job.playlistLimit));
+    }
+  }
+
   // Output template
   const outputPath = job.outputPath || require('./config').resolveFolder(appRoot, cfg.videoFolder);
   const outputTemplate = path.join(outputPath, '%(title)s [%(id)s].%(ext)s');
@@ -206,8 +236,9 @@ function buildArgs(job, cfg, appRoot) {
   // Progress output
   args.push('--newline', '--progress');
 
-  // No playlist (single video)
-  args.push('--no-playlist');
+  if (!isCollection) {
+    args.push('--no-playlist');
+  }
 
   // FFmpeg location if available
   const { path: pathModule } = { path: require('path') };
@@ -239,7 +270,7 @@ function startDownload(job, cfg, appRoot, onProgress, onComplete, onError) {
   const binDir = path.join(appRoot, 'bin');
   const bin = resolveBin(binDir, 'yt-dlp');
   const args = buildArgs(job, cfg, appRoot);
-  args.push(job.url);
+  args.push(validator.normalizeYouTubeUrl(job.url, job.urlType));
 
   logger.appLog('info', 'Starting download', { jobId: job.id, format: job.format, quality: job.quality });
 
