@@ -37,7 +37,13 @@ if exist "%SHORTCUT_PATH%" exit /b 0
 if not exist "%ICON_PATH%" exit /b 0
 
 :next_temp_file
-set "TEMP_TOKEN=%RANDOM%_%RANDOM%_%RANDOM%_%RANDOM%"
+set "TEMP_TOKEN=%DATE%_%TIME%_%RANDOM%"
+set "TEMP_TOKEN=%TEMP_TOKEN:/=%"
+set "TEMP_TOKEN=%TEMP_TOKEN:-=%"
+set "TEMP_TOKEN=%TEMP_TOKEN::=%"
+set "TEMP_TOKEN=%TEMP_TOKEN:.=%"
+set "TEMP_TOKEN=%TEMP_TOKEN:,=%"
+set "TEMP_TOKEN=%TEMP_TOKEN: =0%"
 set "VBS_FILE=%TEMP%\abyssfetch-shortcut-%TEMP_TOKEN%.vbs"
 if exist "%VBS_FILE%" goto :next_temp_file
 (
@@ -67,7 +73,7 @@ if not errorlevel 1 exit /b 0
 
 echo.
 echo [ERROR] Node.js is required before the launcher can finish setup.
-echo [ERROR] Install it once from https://nodejs.org and run `runme.cmd` again.
+echo [ERROR] Install it once from https://nodejs.org and run "runme.cmd" again.
 echo.
 pause
 exit /b 1
@@ -81,7 +87,7 @@ echo [AbyssFetch] First launch detected. Installing dependencies automatically..
 echo.
 
 pushd "%APP_ROOT%"
-call npm install
+call npm install --no-audit --no-fund
 set "INSTALL_EXIT=%errorlevel%"
 popd
 
