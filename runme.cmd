@@ -15,9 +15,9 @@ echo [AbyssFetch] App root: %APP_ROOT%
 set "PATH=%APP_ROOT%\bin;%PATH%"
 
 call :ensure_dirs || exit /b 1
-call :ensure_shortcut
 call :ensure_node || exit /b 1
 call :ensure_dependencies || exit /b 1
+call :ensure_shortcut
 call :warn_missing_tools
 call :launch || exit /b 1
 goto :eof
@@ -39,12 +39,18 @@ if not exist "%ICON_PATH%" exit /b 0
 set "TEMP_TOKEN=%RANDOM%_%RANDOM%_%TIME: =0%"
 set "TEMP_TOKEN=%TEMP_TOKEN::=%"
 set "TEMP_TOKEN=%TEMP_TOKEN:.=%"
+set "TEMP_TOKEN=%TEMP_TOKEN:,=%"
 set "VBS_FILE=%TEMP%\abyssfetch-shortcut-%TEMP_TOKEN%.vbs"
 (
   echo Set WshShell = CreateObject("WScript.Shell"^)
   echo Set Shortcut = WshShell.CreateShortcut("%SHORTCUT_PATH%"^)
-  echo Shortcut.TargetPath = WshShell.ExpandEnvironmentStrings("%%ComSpec%%"^)
-  echo Shortcut.Arguments = "/c ""%APP_ROOT%\runme.cmd"""
+  if exist "%ELECTRON_EXE%" (
+    echo Shortcut.TargetPath = "%ELECTRON_EXE%"
+    echo Shortcut.Arguments = """%APP_ROOT%"""
+  ) else (
+    echo Shortcut.TargetPath = WshShell.ExpandEnvironmentStrings("%%ComSpec%%"^)
+    echo Shortcut.Arguments = "/c ""%APP_ROOT%\runme.cmd"""
+  )
   echo Shortcut.WorkingDirectory = "%APP_ROOT%"
   echo Shortcut.IconLocation = "%ICON_PATH%,0"
   echo Shortcut.WindowStyle = 1
