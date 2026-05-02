@@ -114,25 +114,29 @@ set "ELECTRON_CMD=%APP_ROOT%\node_modules\.bin\electron.cmd"
 if exist "%ELECTRON_EXE%" (
   echo [AbyssFetch] Launching app...
   "%ELECTRON_EXE%" "%APP_ROOT%"
-  if not errorlevel 1 exit /b 0
-  echo.
-  echo [ERROR] Electron exited with code %errorlevel%.
-  echo [ERROR] Check portable\logs\app.log for details.
-  echo.
-  pause
-  exit /b %errorlevel%
+  if errorlevel 1 (
+    echo.
+    echo [ERROR] Electron exited with code %errorlevel%.
+    echo [ERROR] Check portable\logs\app.log for details.
+    echo.
+    pause
+    exit /b %errorlevel%
+  )
+  exit /b 0
 )
 
 if exist "%ELECTRON_CMD%" (
   echo [AbyssFetch] Launching app...
   "%ELECTRON_CMD%" "%APP_ROOT%"
-  if not errorlevel 1 exit /b 0
-  echo.
-  echo [ERROR] Electron exited with code %errorlevel%.
-  echo [ERROR] Check portable\logs\app.log for details.
-  echo.
-  pause
-  exit /b %errorlevel%
+  if errorlevel 1 (
+    echo.
+    echo [ERROR] Electron exited with code %errorlevel%.
+    echo [ERROR] Check portable\logs\app.log for details.
+    echo.
+    pause
+    exit /b %errorlevel%
+  )
+  exit /b 0
 )
 
 echo.
