@@ -20,7 +20,7 @@ A portable YouTube downloader that runs entirely from a USB drive or external di
    - run `npm install`
 4. Launch with `start.bat` or `npm start`.
 
-After the first setup, you usually only need step 4.
+After the first setup on a machine, you only need step 4.
 
 ### Developer Mode
 
