@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://i.ytimg.com https://img.youtube.com https://yt3.ggpht.com; connect-src http://127.0.0.1:57315;" />
+  <title>AbyssFetch</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="abyss-theme">
+
+  <!-- Animated background grid -->
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <!-- ===== HEADER ===== -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="app-logo">
+        <span class="logo-icon">⬡</span>
+        <div class="logo-text">
+          <span class="logo-name">ABYSSFETCH</span>
+          <span class="logo-sub">deep fetch · local only</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-pills" id="statusPills">
+        <div class="status-pill" id="pillYtdlp" title="yt-dlp status">
+          <span class="pill-dot"></span>
+          <span class="pill-label">yt-dlp</span>
+        </div>
+        <div class="status-pill" id="pillFfmpeg" title="ffmpeg status">
+          <span class="pill-dot"></span>
+          <span class="pill-label">ffmpeg</span>
+        </div>
+        <div class="status-pill" id="pillDrive" title="download drive status">
+          <span class="pill-dot"></span>
+          <span class="pill-label">drive</span>
+        </div>
+      </div>
+      <button class="icon-btn" id="btnSettings" title="Settings" aria-label="Open settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- URL Input Section -->
+    <section class="input-section glass-panel">
+      <label class="input-label" for="urlInput">PASTE URL</label>
+      <div class="input-row">
+        <div class="url-input-wrapper">
+          <input
+            type="text"
+            id="urlInput"
+            class="url-input"
+            placeholder="youtube.com/watch?v= · youtu.be/ · /shorts/ · /playlist?list="
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="clear-btn" id="btnClearUrl" title="Clear" aria-label="Clear URL" style="display:none">✕</button>
+        </div>
+        <button class="btn btn-secondary" id="btnFetch" disabled>
+          <span class="btn-icon">◎</span> FETCH
+        </button>
+      </div>
+
+      <!-- Clipboard watcher -->
+      <div class="toolbar-row">
+        <label class="toggle-label" for="toggleClipboard">
+          <input type="checkbox" id="toggleClipboard" class="toggle-input" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span>Clipboard watcher</span>
+        </label>
+        <div id="clipboardAlert" class="clipboard-alert" style="display:none">
+          <span id="clipboardAlertText">YouTube URL detected</span>
+          <button class="btn btn-xs btn-accent" id="btnAddClipboard">Add to queue</button>
+          <button class="btn btn-xs btn-ghost" id="btnDismissClipboard">Dismiss</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Preview Card -->
+    <section class="preview-card glass-panel" id="previewCard" style="display:none">
+      <div class="preview-thumb-wrap">
+        <img class="preview-thumb" id="previewThumb" src="" alt="thumbnail" />
+        <span class="preview-duration" id="previewDuration"></span>
+        <span class="preview-type-badge" id="previewTypeBadge"></span>
+      </div>
+      <div class="preview-info">
+        <div class="preview-title" id="previewTitle"></div>
+        <div class="preview-channel" id="previewChannel"></div>
+        <div class="preview-meta-row">
+          <span class="preview-views" id="previewViews"></span>
+          <span class="preview-date" id="previewDate"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download Controls -->
+    <section class="controls-section glass-panel" id="controlsSection">
+      <div class="controls-row">
+        <div class="select-group">
+          <label class="select-label" for="formatSelect">FORMAT</label>
+          <select id="formatSelect" class="styled-select">
+            <option value="mp4">MP4 (Video)</option>
+            <option value="webm">WEBM (Video)</option>
+            <option value="mp3">MP3 (Audio)</option>
+            <option value="m4a">M4A (Audio)</option>
+          </select>
+        </div>
+        <div class="select-group">
+          <label class="select-label" for="qualitySelect">QUALITY</label>
+          <select id="qualitySelect" class="styled-select">
+            <option value="best">Best Available</option>
+            <option value="2160p">4K (2160p)</option>
+            <option value="1440p">1440p</option>
+            <option value="1080p">1080p</option>
+            <option value="720p">720p</option>
+            <option value="480p">480p</option>
+            <option value="360p">360p</option>
+            <option value="audio only">Audio Only</option>
+          </select>
+        </div>
+        <div class="action-buttons">
+          <button class="btn btn-primary" id="btnDownload" disabled>
+            <span class="btn-icon">↓</span> DOWNLOAD
+          </button>
+          <button class="btn btn-secondary" id="btnQueue" disabled>
+            <span class="btn-icon">+</span> ADD TO QUEUE
+          </button>
+        </div>
+      </div>
+
+      <!-- Option toggles -->
+      <div class="options-row">
+        <label class="toggle-label" for="toggleSubtitles">
+          <input type="checkbox" id="toggleSubtitles" class="toggle-input" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span>Subtitles</span>
+        </label>
+        <label class="toggle-label" for="toggleThumbnail">
+          <input type="checkbox" id="toggleThumbnail" class="toggle-input" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span>Thumbnail</span>
+        </label>
+        <label class="toggle-label" for="toggleInfoJson">
+          <input type="checkbox" id="toggleInfoJson" class="toggle-input" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span>Info JSON</span>
+        </label>
+        <label class="toggle-label" for="toggleAdvanced">
+          <input type="checkbox" id="toggleAdvanced" class="toggle-input" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span>Advanced</span>
+        </label>
+      </div>
+
+      <!-- Advanced section -->
+      <div class="advanced-section" id="advancedSection" style="display:none">
+        <div class="advanced-label">PLAYLIST LIMIT</div>
+        <div class="advanced-row">
+          <label class="select-label" for="playlistLimit">Max items (0 = all)</label>
+          <input type="number" id="playlistLimit" class="small-input" value="10" min="0" max="500" />
+        </div>
+        <div class="advanced-note">When downloading a playlist, only the first N videos will be fetched.</div>
+      </div>
+    </section>
+
+    <!-- Playlist dialog -->
+    <div class="playlist-dialog glass-panel" id="playlistDialog" style="display:none">
+      <div class="dialog-title">Playlist detected</div>
+      <div class="dialog-body" id="playlistDialogBody">
+        This URL is a playlist. How many videos would you like to download?
+      </div>
+      <div class="dialog-row">
+        <label class="select-label" for="playlistItemCount">Item count (0 = all):</label>
+        <input type="number" id="playlistItemCount" class="small-input" value="5" min="0" max="500" />
+      </div>
+      <div class="dialog-buttons">
+        <button class="btn btn-primary" id="btnPlaylistConfirm">Download Playlist</button>
+        <button class="btn btn-ghost" id="btnPlaylistCancel">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Notification area -->
+    <div class="notification-area" id="notificationArea" aria-live="polite"></div>
+
+    <!-- Queue Panel -->
+    <section class="queue-section" id="queueSection">
+      <div class="queue-header">
+        <h2 class="queue-title">DOWNLOAD QUEUE</h2>
+        <div class="queue-header-actions">
+          <span class="queue-count" id="queueCount">0 items</span>
+          <button class="btn btn-xs btn-ghost" id="btnClearCompleted">Clear completed</button>
+        </div>
+      </div>
+      <div class="queue-list" id="queueList">
+        <div class="queue-empty" id="queueEmpty">
+          <span class="queue-empty-icon">⬡</span>
+          <span>No downloads yet. Paste a URL above and hit Download.</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="app-footer">
+    <div class="footer-left">
+      <button class="footer-link" id="btnOpenDownloads">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Downloads Folder
+      </button>
+      <button class="footer-link" id="btnOpenLogs">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Logs
+      </button>
+    </div>
+    <div class="footer-right">
+      <span class="footer-version">v1.0.0</span>
+    </div>
+  </footer>
+
+  <!-- ===== LEGAL NOTICE ===== -->
+  <div class="legal-notice">
+    ⚠ Use only for content you own, have permission to save, or are allowed to download under applicable law.
+  </div>
+
+  <!-- ===== DROP ZONE OVERLAY ===== -->
+  <div class="drop-overlay" id="dropOverlay" style="display:none" aria-hidden="true">
+    <div class="drop-content">
+      <div class="drop-icon">⬇</div>
+      <div class="drop-text">Drop text file with YouTube URLs</div>
+    </div>
+  </div>
+
+  <!-- ===== SETTINGS MODAL ===== -->
+  <div class="modal-overlay" id="settingsOverlay" style="display:none" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="modal glass-panel">
+      <div class="modal-header">
+        <h2 class="modal-title">SETTINGS</h2>
+        <button class="icon-btn" id="btnCloseSettings" aria-label="Close settings">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-group">
+          <div class="settings-group-title">DOWNLOAD FOLDERS</div>
+          <div class="setting-row">
+            <label class="setting-label" for="cfgDownloadRoot">Download Root</label>
+            <input type="text" id="cfgDownloadRoot" class="setting-input" placeholder="./downloads" />
+          </div>
+          <div class="setting-row">
+            <label class="setting-label" for="cfgVideoFolder">Video Folder</label>
+            <input type="text" id="cfgVideoFolder" class="setting-input" placeholder="./downloads/video" />
+          </div>
+          <div class="setting-row">
+            <label class="setting-label" for="cfgAudioFolder">Audio Folder</label>
+            <input type="text" id="cfgAudioFolder" class="setting-input" placeholder="./downloads/audio" />
+          </div>
+          <div class="setting-row">
+            <label class="setting-label" for="cfgShortsFolder">Shorts Folder</label>
+            <input type="text" id="cfgShortsFolder" class="setting-input" placeholder="./downloads/shorts" />
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">DEFAULTS</div>
+          <div class="setting-row">
+            <label class="setting-label" for="cfgDefaultFormat">Default Format</label>
+            <select id="cfgDefaultFormat" class="styled-select">
+              <option value="mp4">MP4</option>
+              <option value="webm">WEBM</option>
+              <option value="mp3">MP3</option>
+              <option value="m4a">M4A</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <label class="setting-label" for="cfgDefaultQuality">Default Quality</label>
+            <select id="cfgDefaultQuality" class="styled-select">
+              <option value="best">Best</option>
+              <option value="1080p">1080p</option>
+              <option value="720p">720p</option>
+              <option value="480p">480p</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <label class="setting-label" for="cfgPlaylistLimit">Playlist Limit</label>
+            <input type="number" id="cfgPlaylistLimit" class="small-input" min="0" max="500" />
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">DEFAULTS (TOGGLES)</div>
+          <div class="setting-row">
+            <label class="toggle-label" for="cfgSaveThumbnail">
+              <input type="checkbox" id="cfgSaveThumbnail" class="toggle-input" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span>Save Thumbnail by default</span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label class="toggle-label" for="cfgSaveSubtitles">
+              <input type="checkbox" id="cfgSaveSubtitles" class="toggle-input" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span>Save Subtitles by default</span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label class="toggle-label" for="cfgSaveInfoJson">
+              <input type="checkbox" id="cfgSaveInfoJson" class="toggle-input" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span>Save Info JSON by default</span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label class="toggle-label" for="cfgAdvancedMode">
+              <input type="checkbox" id="cfgAdvancedMode" class="toggle-input" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span>Advanced mode by default</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btnSaveSettings">Save Settings</button>
+        <button class="btn btn-ghost" id="btnCancelSettings">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
