@@ -1,0 +1,16 @@
+{
+  "downloadRoot": "./downloads",
+  "videoFolder": "./downloads/video",
+  "audioFolder": "./downloads/audio",
+  "shortsFolder": "./downloads/shorts",
+  "tempFolder": "./downloads/temp",
+  "theme": "abyss",
+  "defaultFormat": "mp4",
+  "defaultQuality": "best",
+  "clipboardWatcher": false,
+  "saveThumbnail": false,
+  "saveInfoJson": false,
+  "saveSubtitles": false,
+  "playlistLimit": 10,
+  "advancedMode": false
+}
