@@ -36,8 +36,10 @@ exit /b 0
 if exist "%SHORTCUT_PATH%" exit /b 0
 if not exist "%ICON_PATH%" exit /b 0
 
-set "TEMP_TOKEN=%RANDOM%_%RANDOM%_%RANDOM%"
+:next_temp_file
+set "TEMP_TOKEN=%RANDOM%_%RANDOM%_%RANDOM%_%RANDOM%"
 set "VBS_FILE=%TEMP%\abyssfetch-shortcut-%TEMP_TOKEN%.vbs"
+if exist "%VBS_FILE%" goto :next_temp_file
 (
   echo Set WshShell = CreateObject("WScript.Shell"^)
   echo Set Shortcut = WshShell.CreateShortcut("%SHORTCUT_PATH%"^)
@@ -107,17 +109,23 @@ if exist "%APP_ROOT%\bin\yt-dlp.exe" goto :check_ffmpeg
 echo [WARN] Missing bin\yt-dlp.exe - downloads will not work until you add it.
 
 :check_ffmpeg
-if not exist "%APP_ROOT%\bin\ffmpeg.exe" if not exist "%APP_ROOT%\bin\ffprobe.exe" (
+set "MISSING_FFMPEG="
+set "MISSING_FFPROBE="
+
+if not exist "%APP_ROOT%\bin\ffmpeg.exe" set "MISSING_FFMPEG=1"
+if not exist "%APP_ROOT%\bin\ffprobe.exe" set "MISSING_FFPROBE=1"
+
+if defined MISSING_FFMPEG if defined MISSING_FFPROBE (
   echo [WARN] Missing ffmpeg.exe and ffprobe.exe in bin\ - merges and conversions will not work yet.
   exit /b 0
 )
 
-if not exist "%APP_ROOT%\bin\ffmpeg.exe" (
+if defined MISSING_FFMPEG (
   echo [WARN] Missing ffmpeg.exe in bin\ - merges and conversions will not work yet.
   exit /b 0
 )
 
-if not exist "%APP_ROOT%\bin\ffprobe.exe" (
+if defined MISSING_FFPROBE (
   echo [WARN] Missing ffprobe.exe in bin\ - merges and conversions will not work yet.
   exit /b 0
 )
