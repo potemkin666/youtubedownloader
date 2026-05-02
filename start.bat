@@ -40,7 +40,8 @@ if exist "%ELECTRON_BIN%" (
   echo [AbyssFetch] Launching with local electron...
   "%ELECTRON_BIN%" "%APP_ROOT%"
   if errorlevel 1 (
-    echo [ERROR] Electron exited with an error.
+    echo [ERROR] Electron exited with an error. Exit code: %errorlevel%
+    echo [ERROR] Check portable\logs\app.log for details, or run: node app\backend\server.js
     pause
     exit /b 1
   )

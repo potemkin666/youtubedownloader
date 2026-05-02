@@ -108,8 +108,11 @@ function sanitizeMeta(meta) {
   if (!meta || typeof meta !== 'object') return {};
   const safe = {};
   for (const [key, value] of Object.entries(meta)) {
-    // Never log URL values or cookie/token fields
-    if (['url', 'cookie', 'token', 'password', 'auth'].includes(key.toLowerCase())) {
+    // Never log URL values or sensitive credential fields
+    const lk = key.toLowerCase();
+    if (lk === 'url' || lk.includes('cookie') || lk.includes('token') ||
+        lk.includes('password') || lk.includes('auth') || lk.includes('secret') ||
+        lk.includes('apikey') || lk.includes('header')) {
       safe[key] = '[REDACTED]';
     } else {
       safe[key] = value;
