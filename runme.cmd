@@ -36,10 +36,7 @@ exit /b 0
 if exist "%SHORTCUT_PATH%" exit /b 0
 if not exist "%ICON_PATH%" exit /b 0
 
-set "TEMP_TOKEN=%RANDOM%_%RANDOM%_%TIME: =0%"
-set "TEMP_TOKEN=%TEMP_TOKEN::=%"
-set "TEMP_TOKEN=%TEMP_TOKEN:.=%"
-set "TEMP_TOKEN=%TEMP_TOKEN:,=%"
+set "TEMP_TOKEN=%RANDOM%_%RANDOM%_%RANDOM%"
 set "VBS_FILE=%TEMP%\abyssfetch-shortcut-%TEMP_TOKEN%.vbs"
 (
   echo Set WshShell = CreateObject("WScript.Shell"^)
@@ -86,7 +83,7 @@ call npm install
 set "INSTALL_EXIT=%errorlevel%"
 popd
 
-if not "%INSTALL_EXIT%"=="0" (
+if %INSTALL_EXIT% neq 0 (
   echo.
   echo [ERROR] Automatic setup failed during `npm install`.
   echo [ERROR] Please fix the npm error above and run `runme.cmd` again.
@@ -110,8 +107,21 @@ if exist "%APP_ROOT%\bin\yt-dlp.exe" goto :check_ffmpeg
 echo [WARN] Missing bin\yt-dlp.exe - downloads will not work until you add it.
 
 :check_ffmpeg
-if exist "%APP_ROOT%\bin\ffmpeg.exe" if exist "%APP_ROOT%\bin\ffprobe.exe" exit /b 0
-echo [WARN] Missing ffmpeg.exe and/or ffprobe.exe in bin\ - merges and conversions will not work yet.
+if not exist "%APP_ROOT%\bin\ffmpeg.exe" if not exist "%APP_ROOT%\bin\ffprobe.exe" (
+  echo [WARN] Missing ffmpeg.exe and ffprobe.exe in bin\ - merges and conversions will not work yet.
+  exit /b 0
+)
+
+if not exist "%APP_ROOT%\bin\ffmpeg.exe" (
+  echo [WARN] Missing ffmpeg.exe in bin\ - merges and conversions will not work yet.
+  exit /b 0
+)
+
+if not exist "%APP_ROOT%\bin\ffprobe.exe" (
+  echo [WARN] Missing ffprobe.exe in bin\ - merges and conversions will not work yet.
+  exit /b 0
+)
+
 exit /b 0
 
 :launch
