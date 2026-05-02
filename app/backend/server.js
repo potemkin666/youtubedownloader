@@ -77,9 +77,13 @@ function start(root, port = 57315) {
     }
     try {
       const binDir = path.join(appRoot, 'bin');
-      const metadata = await downloader.fetchMetadata(url.trim(), binDir);
+      const normalizedUrl = validator.normalizeYouTubeUrl(url.trim(), validation.type);
+      const metadata = await downloader.fetchMetadata(normalizedUrl, binDir, { requestedType: validation.type });
       logger.appLog('info', 'Metadata fetched successfully');
-      res.json(metadata);
+      res.json(Object.assign({}, metadata, {
+        requestedType: validation.type,
+        normalizedUrl
+      }));
     } catch (err) {
       logger.appLog('error', 'Fetch metadata failed', { error: err.message });
       res.status(500).json({ error: err.message });
@@ -98,6 +102,11 @@ function start(root, port = 57315) {
     }
 
     const cfg = config.load(appRoot);
+    const normalizedUrl = validator.normalizeYouTubeUrl(url.trim(), validation.type);
+    const requestedPlaylistLimit = Number.parseInt(req.body && req.body.playlistLimit, 10);
+    const playlistLimit = Number.isInteger(requestedPlaylistLimit) && requestedPlaylistLimit >= 0
+      ? requestedPlaylistLimit
+      : cfg.playlistLimit;
     let resolvedOutput = config.resolveFolder(appRoot, cfg.videoFolder);
     if (outputFolder && typeof outputFolder === 'string') {
       const sanitized = validator.sanitizeOutputPath(outputFolder, config.resolveFolder(appRoot, cfg.downloadRoot));
@@ -113,11 +122,13 @@ function start(root, port = 57315) {
     const jobId = uuidv4();
     const job = {
       id: jobId,
-      url: url.trim(),
+      url: normalizedUrl,
+      urlType: validation.type,
       title: req.body.title || 'Fetching...',
       status: 'queued',
       format: format || cfg.defaultFormat || 'mp4',
       quality: quality || cfg.defaultQuality || 'best',
+      playlistLimit,
       outputPath: resolvedOutput,
       saveThumbnail: !!saveThumbnail,
       saveInfoJson: !!saveInfoJson,

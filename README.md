@@ -73,7 +73,7 @@ abyssfetch/
 1. **Electron** wraps the app in a native desktop window
 2. **Express** runs a local-only API server on `127.0.0.1:57315` — not accessible from the network
 3. The **frontend** (pure HTML/CSS/JS) communicates with the backend via `fetch` and Server-Sent Events
-4. **yt-dlp** does all the heavy lifting — metadata fetching and downloading
+4. **yt-dlp** does all the heavy lifting — metadata fetching and downloading for videos, playlists, and channel batches
 5. **ffmpeg** merges video+audio streams for MP4/WEBM output
 6. Progress is streamed in real-time to the UI via SSE
 
@@ -161,7 +161,7 @@ Check `portable/logs/app.log` and `portable/logs/downloads.log` for detailed err
 - **Windows only** for portable `.exe` builds (Linux/macOS work in dev mode)
 - **No browser cookies** — age-restricted or member-only videos cannot be downloaded
 - **No simultaneous downloads** — queue processes one item at a time
-- **Playlists** — large playlists may take a long time; use the playlist limit setting
+- **Playlists / channels** — large batch downloads may take a long time; use the playlist limit setting or set it to `0` for everything
 - **Live streams** — live videos cannot be downloaded while streaming
 - **DRM content** — DRM-protected content cannot be downloaded (by design)
 

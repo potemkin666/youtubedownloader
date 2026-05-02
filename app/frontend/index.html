@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://i.ytimg.com https://img.youtube.com https://yt3.ggpht.com; connect-src http://127.0.0.1:57315;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://i.ytimg.com https://img.youtube.com https://yt3.ggpht.com https://github.com https://*.githubusercontent.com https://*.amazonaws.com; connect-src http://127.0.0.1:57315;" />
   <title>AbyssFetch</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="abyss-theme">
 
+  <div class="bg-art" aria-hidden="true"></div>
   <!-- Animated background grid -->
   <div class="bg-grid" aria-hidden="true"></div>
 
@@ -56,7 +57,7 @@
             type="text"
             id="urlInput"
             class="url-input"
-            placeholder="youtube.com/watch?v= · youtu.be/ · /shorts/ · /playlist?list="
+            placeholder="youtube.com/watch?v= · youtu.be/ · /shorts/ · /playlist?list= · /@channel/videos"
             autocomplete="off"
             spellcheck="false"
           />
@@ -165,24 +166,24 @@
           <label class="select-label" for="playlistLimit">Max items (0 = all)</label>
           <input type="number" id="playlistLimit" class="small-input" value="10" min="0" max="500" />
         </div>
-        <div class="advanced-note">When downloading a playlist, only the first N videos will be fetched.</div>
+        <div class="advanced-note">For playlists and channels, limit how many videos are queued. Use 0 to fetch everything.</div>
       </div>
     </section>
 
     <!-- Playlist dialog -->
     <div class="playlist-dialog glass-panel" id="playlistDialog" style="display:none">
-      <div class="dialog-title">Playlist detected</div>
-      <div class="dialog-body" id="playlistDialogBody">
-        This URL is a playlist. How many videos would you like to download?
-      </div>
-      <div class="dialog-row">
-        <label class="select-label" for="playlistItemCount">Item count (0 = all):</label>
-        <input type="number" id="playlistItemCount" class="small-input" value="5" min="0" max="500" />
-      </div>
-      <div class="dialog-buttons">
-        <button class="btn btn-primary" id="btnPlaylistConfirm">Download Playlist</button>
-        <button class="btn btn-ghost" id="btnPlaylistCancel">Cancel</button>
-      </div>
+        <div class="dialog-title">Batch download detected</div>
+        <div class="dialog-body" id="playlistDialogBody">
+          This URL points to a playlist or channel. How many videos would you like to download?
+        </div>
+        <div class="dialog-row">
+          <label class="select-label" for="playlistItemCount">Video count (0 = all):</label>
+          <input type="number" id="playlistItemCount" class="small-input" value="5" min="0" max="500" />
+        </div>
+        <div class="dialog-buttons">
+          <button class="btn btn-primary" id="btnPlaylistConfirm">Queue Batch Download</button>
+          <button class="btn btn-ghost" id="btnPlaylistCancel">Cancel</button>
+        </div>
     </div>
 
     <!-- Notification area -->

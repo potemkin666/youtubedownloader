@@ -54,6 +54,19 @@ body {
   flex-direction: column;
 }
 
+/* ---- Background Art ---- */
+.bg-art {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(6,8,16,0.52) 0%, rgba(6,8,16,0.88) 100%),
+    url("https://github.com/user-attachments/assets/10080bc1-7934-4dc5-bac0-b822787813a0") center top / cover no-repeat;
+  opacity: 0.5;
+  filter: saturate(1.1) contrast(1.02);
+}
+
 /* ---- Animated Background Grid ---- */
 .bg-grid {
   position: fixed;
@@ -320,7 +333,7 @@ body::before {
    GLASS PANEL
    ================================================================ */
 .glass-panel {
-  background: var(--glass-bg);
+  background: rgba(13,20,36,0.84);
   backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);

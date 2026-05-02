@@ -19,6 +19,21 @@ const DANGEROUS_PATTERNS = [
   /vbscript:/i
 ];
 
+function hasPathSegment(pathname, prefix, minValueLength = 1) {
+  if (!pathname.startsWith(prefix)) return false;
+  const remainder = pathname.slice(prefix.length).split('/')[0];
+  return remainder.length >= minValueLength;
+}
+
+function isChannelPath(pathname) {
+  return (
+    hasPathSegment(pathname, '/@', 1) ||
+    hasPathSegment(pathname, '/channel/', 5) ||
+    hasPathSegment(pathname, '/c/', 1) ||
+    hasPathSegment(pathname, '/user/', 1)
+  );
+}
+
 /**
  * Validate that a URL is a supported YouTube URL.
  * Returns {valid, type, error}
@@ -97,8 +112,30 @@ function validateYouTubeUrl(url) {
     return { valid: true, type: 'video', error: null };
   }
 
-  // Channel or other YouTube page - not directly downloadable
-  return { valid: false, type: null, error: 'URL must point to a video, shorts, or playlist' };
+  if (isChannelPath(pathname)) {
+    return { valid: true, type: 'channel', error: null };
+  }
+
+  return { valid: false, type: null, error: 'URL must point to a video, shorts, playlist, or channel' };
+}
+
+function normalizeYouTubeUrl(url, type = null) {
+  const inferred = type || validateYouTubeUrl(url).type;
+  const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
+
+  if (inferred !== 'channel') {
+    return parsed.toString();
+  }
+
+  const pathname = parsed.pathname.replace(/\/+$/, '');
+  const hasVideosTab = /\/videos$/i.test(pathname);
+  const hasSpecificTab = /\/(videos|streams|shorts|playlists|featured)$/i.test(pathname);
+
+  if (!hasVideosTab && !hasSpecificTab && isChannelPath(pathname.toLowerCase())) {
+    parsed.pathname = `${pathname}/videos`;
+  }
+
+  return parsed.toString();
 }
 
 /**
@@ -139,4 +176,4 @@ function sanitizeOutputPath(outputPath, downloadRoot) {
   return resolvedOutput;
 }
 
-module.exports = { validateYouTubeUrl, sanitizeFilename, sanitizeOutputPath };
+module.exports = { validateYouTubeUrl, normalizeYouTubeUrl, sanitizeFilename, sanitizeOutputPath };
