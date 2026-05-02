@@ -133,23 +133,13 @@ if defined MISSING_FFPROBE (
 exit /b 0
 
 :launch
-if exist "%ELECTRON_EXE%" (
-  echo [AbyssFetch] Launching app...
-  "%ELECTRON_EXE%" "%APP_ROOT%"
-  if errorlevel 1 (
-    echo.
-    echo [ERROR] Electron exited with code %errorlevel%.
-    echo [ERROR] Check portable\logs\app.log for details.
-    echo.
-    pause
-    exit /b %errorlevel%
-  )
-  exit /b 0
-)
+set "LAUNCH_TARGET="
+if exist "%ELECTRON_EXE%" set "LAUNCH_TARGET=%ELECTRON_EXE%"
+if not defined LAUNCH_TARGET if exist "%ELECTRON_CMD%" set "LAUNCH_TARGET=%ELECTRON_CMD%"
 
-if exist "%ELECTRON_CMD%" (
+if defined LAUNCH_TARGET (
   echo [AbyssFetch] Launching app...
-  "%ELECTRON_CMD%" "%APP_ROOT%"
+  "%LAUNCH_TARGET%" "%APP_ROOT%"
   if errorlevel 1 (
     echo.
     echo [ERROR] Electron exited with code %errorlevel%.
