@@ -3,6 +3,10 @@ setlocal enableextensions enabledelayedexpansion
 
 set "APP_ROOT=%~dp0"
 if "%APP_ROOT:~-1%"=="\" set "APP_ROOT=%APP_ROOT:~0,-1%"
+set "SHORTCUT_PATH=%APP_ROOT%\Run AbyssFetch.lnk"
+set "ICON_PATH=%APP_ROOT%\assets\icon.ico"
+set "ELECTRON_EXE=%APP_ROOT%\node_modules\electron\dist\electron.exe"
+set "ELECTRON_CMD=%APP_ROOT%\node_modules\.bin\electron.cmd"
 
 title AbyssFetch Launcher
 echo [AbyssFetch] Preparing launcher...
@@ -29,13 +33,13 @@ if not exist "%APP_ROOT%\downloads\temp"  mkdir "%APP_ROOT%\downloads\temp"
 exit /b 0
 
 :ensure_shortcut
-set "SHORTCUT_PATH=%APP_ROOT%\Run AbyssFetch.lnk"
-set "ICON_PATH=%APP_ROOT%\assets\icon.ico"
-
 if exist "%SHORTCUT_PATH%" exit /b 0
 if not exist "%ICON_PATH%" exit /b 0
 
-set "VBS_FILE=%TEMP%\abyssfetch-shortcut-%RANDOM%%RANDOM%.vbs"
+set "TEMP_TOKEN=%RANDOM%_%RANDOM%_%TIME: =0%"
+set "TEMP_TOKEN=%TEMP_TOKEN::=%"
+set "TEMP_TOKEN=%TEMP_TOKEN:.=%"
+set "VBS_FILE=%TEMP%\abyssfetch-shortcut-%TEMP_TOKEN%.vbs"
 (
   echo Set WshShell = CreateObject("WScript.Shell"^)
   echo Set Shortcut = WshShell.CreateShortcut("%SHORTCUT_PATH%"^)
@@ -64,9 +68,6 @@ pause
 exit /b 1
 
 :ensure_dependencies
-set "ELECTRON_EXE=%APP_ROOT%\node_modules\electron\dist\electron.exe"
-set "ELECTRON_CMD=%APP_ROOT%\node_modules\.bin\electron.cmd"
-
 if exist "%ELECTRON_EXE%" exit /b 0
 if exist "%ELECTRON_CMD%" exit /b 0
 
@@ -108,9 +109,6 @@ echo [WARN] Missing ffmpeg.exe and/or ffprobe.exe in bin\ - merges and conversio
 exit /b 0
 
 :launch
-set "ELECTRON_EXE=%APP_ROOT%\node_modules\electron\dist\electron.exe"
-set "ELECTRON_CMD=%APP_ROOT%\node_modules\.bin\electron.cmd"
-
 if exist "%ELECTRON_EXE%" (
   echo [AbyssFetch] Launching app...
   "%ELECTRON_EXE%" "%APP_ROOT%"
