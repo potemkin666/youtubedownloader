@@ -1,6 +1,6 @@
 # AbyssFetch
 
-> **Deep fetch. Local only. No install required.**
+> **Deep fetch. Local only. No installer required.**
 
 A portable YouTube downloader that runs entirely from a USB drive or external disk. No cloud, no telemetry, no permanent installation. Built with Electron + Express + yt-dlp.
 
@@ -10,12 +10,17 @@ A portable YouTube downloader that runs entirely from a USB drive or external di
 
 ### Portable Mode (USB Drive / External Disk)
 
-1. Copy this entire folder to your USB drive or external disk
-2. Download **yt-dlp.exe** from [github.com/yt-dlp/yt-dlp/releases](https://github.com/yt-dlp/yt-dlp/releases) → place in `bin/`
-3. Download **ffmpeg.exe** and **ffprobe.exe** from [gyan.dev/ffmpeg/builds](https://www.gyan.dev/ffmpeg/builds/) or [BtbN builds](https://github.com/BtbN/FFmpeg-Builds/releases) → place in `bin/`
-4. Install Node.js (one-time, from [nodejs.org](https://nodejs.org)) if not already installed
-5. Open a terminal in this folder and run: `npm install`
-6. Double-click `start.bat` or run `npm start`
+1. Copy this folder to your USB drive or external disk.
+2. Put these files in `bin/`:
+   - `yt-dlp.exe` from [yt-dlp releases](https://github.com/yt-dlp/yt-dlp/releases)
+   - `ffmpeg.exe` and `ffprobe.exe` from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) or [BtbN builds](https://github.com/BtbN/FFmpeg-Builds/releases)
+3. First time only:
+   - install [Node.js](https://nodejs.org)
+   - open a terminal in this folder
+   - run `npm install`
+4. Launch with `start.bat` or `npm start`.
+
+After the first setup, you usually only need step 4.
 
 ### Developer Mode
 
@@ -102,13 +107,13 @@ abyssfetch/
 
 ---
 
-## First Run Setup
+## First-Time Setup
 
 ```bash
-# 1. Navigate to the app folder
+# 1. Open a terminal in the app folder
 cd /path/to/abyssfetch
 
-# 2. Install Node.js dependencies
+# 2. Install dependencies
 npm install
 
 # 3. Start the app
