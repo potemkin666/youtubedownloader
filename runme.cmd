@@ -39,7 +39,8 @@ set "VBS_FILE=%TEMP%\abyssfetch-shortcut-%RANDOM%%RANDOM%.vbs"
 (
   echo Set WshShell = CreateObject("WScript.Shell"^)
   echo Set Shortcut = WshShell.CreateShortcut("%SHORTCUT_PATH%"^)
-  echo Shortcut.TargetPath = "%APP_ROOT%\runme.cmd"
+  echo Shortcut.TargetPath = WshShell.ExpandEnvironmentStrings("%%ComSpec%%"^)
+  echo Shortcut.Arguments = "/c ""%APP_ROOT%\runme.cmd"""
   echo Shortcut.WorkingDirectory = "%APP_ROOT%"
   echo Shortcut.IconLocation = "%ICON_PATH%,0"
   echo Shortcut.WindowStyle = 1
@@ -112,13 +113,25 @@ set "ELECTRON_CMD=%APP_ROOT%\node_modules\.bin\electron.cmd"
 
 if exist "%ELECTRON_EXE%" (
   echo [AbyssFetch] Launching app...
-  start "" "%ELECTRON_EXE%" "%APP_ROOT%"
-  exit /b 0
+  "%ELECTRON_EXE%" "%APP_ROOT%"
+  if not errorlevel 1 exit /b 0
+  echo.
+  echo [ERROR] Electron exited with code %errorlevel%.
+  echo [ERROR] Check portable\logs\app.log for details.
+  echo.
+  pause
+  exit /b %errorlevel%
 )
 
 if exist "%ELECTRON_CMD%" (
   echo [AbyssFetch] Launching app...
   "%ELECTRON_CMD%" "%APP_ROOT%"
+  if not errorlevel 1 exit /b 0
+  echo.
+  echo [ERROR] Electron exited with code %errorlevel%.
+  echo [ERROR] Check portable\logs\app.log for details.
+  echo.
+  pause
   exit /b %errorlevel%
 )
 
