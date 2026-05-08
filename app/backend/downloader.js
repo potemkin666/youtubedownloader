@@ -51,6 +51,15 @@ function checkTool(binDir, toolName) {
   });
 }
 
+function isMissingBinaryError(err) {
+  return !!(err && err.code === 'ENOENT');
+}
+
+function getMissingBinaryMessage(binDir, toolName) {
+  const exeName = process.platform === 'win32' ? `${toolName}.exe` : toolName;
+  return `${exeName} is missing. Add ${exeName} to ${binDir} and restart AbyssFetch.`;
+}
+
 /**
  * Fetch video metadata using yt-dlp --dump-json.
  */
@@ -93,6 +102,9 @@ function fetchMetadata(url, binDir, options = {}) {
     child.stderr.on('data', d => { stderr += d.toString(); });
 
     child.on('error', (err) => {
+      if (isMissingBinaryError(err)) {
+        return reject(new Error(getMissingBinaryMessage(binDir, 'yt-dlp')));
+      }
       reject(new Error(`yt-dlp not found or failed to start: ${err.message}`));
     });
 
@@ -281,6 +293,10 @@ function startDownload(job, cfg, appRoot, onProgress, onComplete, onError) {
       windowsHide: true
     });
   } catch (err) {
+    if (isMissingBinaryError(err)) {
+      onError(new Error(getMissingBinaryMessage(binDir, 'yt-dlp')));
+      return;
+    }
     onError(new Error(`Failed to spawn yt-dlp: ${err.message}`));
     return;
   }
@@ -316,6 +332,10 @@ function startDownload(job, cfg, appRoot, onProgress, onComplete, onError) {
 
   child.on('error', (err) => {
     activeProcesses.delete(job.id);
+    if (isMissingBinaryError(err)) {
+      onError(new Error(getMissingBinaryMessage(binDir, 'yt-dlp')));
+      return;
+    }
     onError(new Error(`yt-dlp process error: ${err.message}`));
   });
 
