@@ -987,7 +987,9 @@ async function openBinFolder() {
 
 function openExternal(targetUrl) {
   if (window.electronAPI && window.electronAPI.openExternal) {
-    window.electronAPI.openExternal(targetUrl).catch(() => {});
+    window.electronAPI.openExternal(targetUrl).catch((err) => {
+      console.warn('Failed to open external URL:', err);
+    });
     return;
   }
   window.open(targetUrl, '_blank', 'noopener,noreferrer');
