@@ -18,6 +18,7 @@ const state = {
   sseConnections: new Map(),
   fetchInProgress: false,
   appRoot: '',
+  platform: '',
   tools: {
     ytdlp: false,
     ffmpeg: false,
@@ -31,6 +32,7 @@ const state = {
 // ================================================================
 function init() {
   setupUIListeners();
+  loadPlatform();
   loadAppRoot();
   checkStatus();
   loadSettings().then(() => {
@@ -964,7 +966,18 @@ async function loadAppRoot() {
   if (state.appRoot || !window.electronAPI || !window.electronAPI.getAppRoot) return;
   try {
     state.appRoot = await window.electronAPI.getAppRoot();
-  } catch (_) { /* ignore */ }
+  } catch (err) {
+    console.warn('Failed to resolve app root:', err);
+  }
+}
+
+function loadPlatform() {
+  if (state.platform) return;
+  if (window.electronAPI && window.electronAPI.getPlatform) {
+    state.platform = window.electronAPI.getPlatform() || '';
+    return;
+  }
+  state.platform = navigator.platform || navigator.userAgent || '';
 }
 
 async function openBinFolder() {
@@ -1091,7 +1104,7 @@ function getToolBinaryLabel(toolName) {
 }
 
 function isWindowsPlatform() {
-  return /windows/i.test(navigator.userAgent || '');
+  return /win/i.test(state.platform || '');
 }
 
 function escHtml(str) {

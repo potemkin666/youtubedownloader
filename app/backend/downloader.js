@@ -52,7 +52,7 @@ function checkTool(binDir, toolName) {
 }
 
 function isMissingBinaryError(err) {
-  return !!(err && (err.code === 'ENOENT' || /enoent/i.test(err.message || '')));
+  return !!(err && err.code === 'ENOENT');
 }
 
 function getMissingBinaryMessage(binDir, toolName) {
