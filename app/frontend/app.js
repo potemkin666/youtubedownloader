@@ -67,7 +67,7 @@ async function checkStatus() {
     refreshPrimaryActions();
 
     if (!state.tools.ytdlp) {
-      showNotification('yt-dlp.exe is missing from bin/. Fetch and downloads stay disabled until you add it.', 'warn', 8000);
+      showNotification(`${getToolBinaryLabel('yt-dlp')} is missing from bin/. Fetch and downloads stay disabled until you add it.`, 'warn', 8000);
     }
     const missingMediaTools = getMissingMediaTools();
     if (missingMediaTools.length) {
@@ -309,7 +309,7 @@ function setupUIListeners() {
 // ================================================================
 async function fetchVideoInfo(url) {
   if (!url || state.fetchInProgress) return;
-  if (!ensureYtdlpReady('Metadata fetch is unavailable until yt-dlp.exe is added to bin/.')) return;
+  if (!ensureYtdlpReady(`Metadata fetch is unavailable until ${getToolBinaryLabel('yt-dlp')} is added to bin/.`)) return;
 
   // Basic pre-flight
   if (!isLikelyYouTubeUrl(url)) {
@@ -476,7 +476,7 @@ function getPreferredBatchLimit() {
 }
 
 async function addToQueue(url, options = {}) {
-  if (!ensureYtdlpReady('Downloads are unavailable until yt-dlp.exe is added to bin/.')) return;
+  if (!ensureYtdlpReady(`Downloads are unavailable until ${getToolBinaryLabel('yt-dlp')} is added to bin/.`)) return;
   try {
     const res = await apiFetch('/api/download', {
       method: 'POST',
@@ -1041,7 +1041,7 @@ function renderToolSetup() {
   if (!card || !copy || !state.tools.checked) return;
 
   const missing = [];
-  if (!state.tools.ytdlp) missing.push('yt-dlp.exe');
+  if (!state.tools.ytdlp) missing.push(getToolBinaryLabel('yt-dlp'));
   missing.push(...getMissingMediaTools());
 
   if (!missing.length) {
@@ -1052,10 +1052,10 @@ function renderToolSetup() {
 
   const parts = [];
   if (!state.tools.ytdlp) {
-    parts.push('Add yt-dlp.exe to bin/ to re-enable metadata fetches and downloads.');
+    parts.push(`Add ${getToolBinaryLabel('yt-dlp')} to bin/ to re-enable metadata fetches and downloads.`);
   }
   if (!state.tools.ffmpeg || !state.tools.ffprobe) {
-    parts.push('Add both ffmpeg.exe and ffprobe.exe to bin/ so merges and audio conversions can run.');
+    parts.push(`Add both ${getToolBinaryLabel('ffmpeg')} and ${getToolBinaryLabel('ffprobe')} to bin/ so merges and audio conversions can run.`);
   }
   copy.textContent = `Missing tools: ${missing.join(', ')}. ${parts.join(' ')}`;
   card.style.display = 'flex';
@@ -1071,19 +1071,27 @@ function ensureYtdlpReady(message) {
 function formatToolError(message) {
   const raw = String(message || '').trim();
   if (/yt-dlp(?:\.exe)? is missing/i.test(raw) || /yt-dlp not found or failed to start/i.test(raw)) {
-    return 'yt-dlp.exe is missing from bin/. Add it, then restart AbyssFetch.';
+    return `${getToolBinaryLabel('yt-dlp')} is missing from bin/. Add it, then restart AbyssFetch.`;
   }
   if (/(ffmpeg|ffprobe)(?:\.exe)?\s+is missing/i.test(raw) || /(ffmpeg|ffprobe).*(not found|failed to start)/i.test(raw)) {
-    return 'ffmpeg.exe and ffprobe.exe must both be present in bin/ for merges and conversions.';
+    return `${getToolBinaryLabel('ffmpeg')} and ${getToolBinaryLabel('ffprobe')} must both be present in bin/ for merges and conversions.`;
   }
   return raw || 'Request failed';
 }
 
 function getMissingMediaTools() {
   const missing = [];
-  if (!state.tools.ffmpeg) missing.push('ffmpeg.exe');
-  if (!state.tools.ffprobe) missing.push('ffprobe.exe');
+  if (!state.tools.ffmpeg) missing.push(getToolBinaryLabel('ffmpeg'));
+  if (!state.tools.ffprobe) missing.push(getToolBinaryLabel('ffprobe'));
   return missing;
+}
+
+function getToolBinaryLabel(toolName) {
+  return isWindowsPlatform() ? `${toolName}.exe` : toolName;
+}
+
+function isWindowsPlatform() {
+  return /windows/i.test(navigator.userAgent || '');
 }
 
 function escHtml(str) {
