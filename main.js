@@ -108,6 +108,16 @@ ipcMain.handle('openFolder', async (_event, folderPath) => {
   }
 });
 
+// IPC: open an external URL in the OS browser
+ipcMain.handle('openExternal', async (_event, targetUrl) => {
+  try {
+    await shell.openExternal(String(targetUrl || ''));
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
 // IPC: return the app root path
 ipcMain.handle('getAppRoot', async () => {
   return APP_ROOT;

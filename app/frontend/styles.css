@@ -62,9 +62,9 @@ body {
   z-index: 0;
   background:
     linear-gradient(180deg, rgba(6,8,16,0.52) 0%, rgba(6,8,16,0.88) 100%),
-    url("https://github.com/user-attachments/assets/10080bc1-7934-4dc5-bac0-b822787813a0") center top / cover no-repeat;
-  opacity: 0.5;
-  filter: saturate(1.1) contrast(1.02);
+    url("https://github.com/user-attachments/assets/ccd49e0a-cbec-4899-9598-6b8358d3fe14") center center / cover no-repeat;
+  opacity: 0.58;
+  filter: saturate(1.05) contrast(1.08);
 }
 
 /* ---- Animated Background Grid ---- */
@@ -305,6 +305,10 @@ body::before {
   font-size: 11px;
 }
 
+.btn-sm {
+  padding: 8px 14px;
+}
+
 .btn-icon { font-size: 13px; }
 
 .icon-btn {
@@ -437,6 +441,36 @@ body::before {
   gap: 16px;
   margin-top: 12px;
   flex-wrap: wrap;
+}
+
+.tool-setup-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+  border-color: rgba(255,170,0,0.28);
+  box-shadow: 0 0 0 1px rgba(255,170,0,0.08), 0 18px 50px rgba(0,0,0,0.18);
+}
+
+.tool-setup-title {
+  color: var(--warning);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.tool-setup-copy {
+  color: var(--text-primary);
+  line-height: 1.55;
+}
+
+.tool-setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 /* ================================================================

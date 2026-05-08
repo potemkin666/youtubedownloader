@@ -16,7 +16,14 @@ const state = {
   lastClipboard: '',
   config: {},
   sseConnections: new Map(),
-  fetchInProgress: false
+  fetchInProgress: false,
+  appRoot: '',
+  tools: {
+    ytdlp: false,
+    ffmpeg: false,
+    ffprobe: false,
+    checked: false
+  }
 };
 
 // ================================================================
@@ -24,6 +31,7 @@ const state = {
 // ================================================================
 function init() {
   setupUIListeners();
+  loadAppRoot();
   checkStatus();
   loadSettings().then(() => {
     applySettingsToUI();
@@ -46,18 +54,30 @@ async function checkStatus() {
     const res = await apiFetch('/api/status');
     const data = await res.json();
 
+    state.tools = {
+      ytdlp: !!(data.ytdlp && data.ytdlp.available),
+      ffmpeg: !!(data.ffmpeg && data.ffmpeg.available),
+      ffprobe: !!(data.ffprobe && data.ffprobe.available),
+      checked: true
+    };
+
     setPillStatus(pillYtdlp, data.ytdlp && data.ytdlp.available, data.ytdlp && data.ytdlp.version);
     setPillStatus(pillFfmpeg, data.ffmpeg && data.ffmpeg.available, data.ffmpeg && data.ffmpeg.version);
+    renderToolSetup();
+    refreshPrimaryActions();
 
-    if (data.ytdlp && !data.ytdlp.available) {
-      showNotification('yt-dlp not found. Place yt-dlp.exe in the bin/ folder.', 'warn', 8000);
+    if (!state.tools.ytdlp) {
+      showNotification('yt-dlp.exe is missing from bin/. Fetch and downloads stay disabled until you add it.', 'warn', 8000);
     }
-    if (data.ffmpeg && !data.ffmpeg.available) {
-      showNotification('ffmpeg not found. MP4 merging may fail. Place ffmpeg.exe in bin/.', 'warn', 6000);
+    if (!state.tools.ffmpeg || !state.tools.ffprobe) {
+      showNotification('ffmpeg.exe and ffprobe.exe are missing from bin/. MP4 merges and conversions will not work until both files are added.', 'warn', 8000);
     }
   } catch (_) {
+    state.tools = { ytdlp: false, ffmpeg: false, ffprobe: false, checked: true };
     setPillStatus(pillYtdlp, false, null);
     setPillStatus(pillFfmpeg, false, null);
+    renderToolSetup();
+    refreshPrimaryActions();
     showNotification('Cannot reach backend. Is the app running correctly?', 'error', 0);
   }
 }
@@ -122,6 +142,9 @@ function setupUIListeners() {
   const btnPlaylistCancel = document.getElementById('btnPlaylistCancel');
   const btnAddClipboard = document.getElementById('btnAddClipboard');
   const btnDismissClipboard = document.getElementById('btnDismissClipboard');
+  const btnOpenBinFolder = document.getElementById('btnOpenBinFolder');
+  const btnGetYtdlp = document.getElementById('btnGetYtdlp');
+  const btnGetFfmpeg = document.getElementById('btnGetFfmpeg');
 
   // URL input
   urlInput.addEventListener('input', () => {
@@ -129,14 +152,12 @@ function setupUIListeners() {
     state.currentUrl = val;
     btnClearUrl.style.display = val ? 'block' : 'none';
     const hasUrl = val.length > 3;
-    btnFetch.disabled = !hasUrl;
     urlInput.classList.toggle('has-url', hasUrl);
     urlInput.classList.remove('invalid');
     if (state.currentMetadata && !val.includes(state.currentMetadata.id)) {
       hidePreview();
     }
-    btnDownload.disabled = !hasUrl;
-    btnQueue.disabled = !hasUrl;
+    refreshPrimaryActions();
   });
 
   urlInput.addEventListener('keydown', (e) => {
@@ -230,6 +251,24 @@ function setupUIListeners() {
     openFolder('./portable/logs');
   });
 
+  if (btnOpenBinFolder) {
+    btnOpenBinFolder.addEventListener('click', () => {
+      openBinFolder();
+    });
+  }
+
+  if (btnGetYtdlp) {
+    btnGetYtdlp.addEventListener('click', () => {
+      openExternal('https://github.com/yt-dlp/yt-dlp/releases/latest');
+    });
+  }
+
+  if (btnGetFfmpeg) {
+    btnGetFfmpeg.addEventListener('click', () => {
+      openExternal('https://www.gyan.dev/ffmpeg/builds/');
+    });
+  }
+
   // Clear completed
   btnClearCompleted.addEventListener('click', async () => {
     try {
@@ -269,6 +308,7 @@ function setupUIListeners() {
 // ================================================================
 async function fetchVideoInfo(url) {
   if (!url || state.fetchInProgress) return;
+  if (!ensureYtdlpReady('Metadata fetch is unavailable until yt-dlp.exe is added to bin/.')) return;
 
   // Basic pre-flight
   if (!isLikelyYouTubeUrl(url)) {
@@ -300,19 +340,18 @@ async function fetchVideoInfo(url) {
     state.currentUrl = url;
 
     renderPreview(metadata);
-    document.getElementById('btnDownload').disabled = false;
-    document.getElementById('btnQueue').disabled = false;
+    refreshPrimaryActions();
     if (isBatchSource(url, metadata)) {
       const batchLabel = getBatchLabel(metadata, url);
       showNotification(`${batchLabel} detected. Choose Download or Add to Queue to batch-fetch videos.`, 'info', 5000);
     }
   } catch (err) {
-    showNotification(`Fetch failed: ${err.message}`, 'error');
+    showNotification(`Fetch failed: ${formatToolError(err.message)}`, 'error');
     showUrlInvalid();
   } finally {
     btnFetch.innerHTML = origContent;
-    btnFetch.disabled = false;
     state.fetchInProgress = false;
+    refreshPrimaryActions();
   }
 }
 
@@ -436,6 +475,7 @@ function getPreferredBatchLimit() {
 }
 
 async function addToQueue(url, options = {}) {
+  if (!ensureYtdlpReady('Downloads are unavailable until yt-dlp.exe is added to bin/.')) return;
   try {
     const res = await apiFetch('/api/download', {
       method: 'POST',
@@ -462,7 +502,7 @@ async function addToQueue(url, options = {}) {
     loadQueue();
     connectSSE(data.jobId);
   } catch (err) {
-    showNotification(`Queue error: ${err.message}`, 'error');
+    showNotification(`Queue error: ${formatToolError(err.message)}`, 'error');
   }
 }
 
@@ -919,6 +959,26 @@ function openFolder(folderPath) {
   // In browser/dev mode, nothing can be done
 }
 
+async function loadAppRoot() {
+  if (state.appRoot || !window.electronAPI || !window.electronAPI.getAppRoot) return;
+  try {
+    state.appRoot = await window.electronAPI.getAppRoot();
+  } catch (_) { /* ignore */ }
+}
+
+async function openBinFolder() {
+  await loadAppRoot();
+  openFolder(state.appRoot ? `${state.appRoot}/bin` : './bin');
+}
+
+function openExternal(targetUrl) {
+  if (window.electronAPI && window.electronAPI.openExternal) {
+    window.electronAPI.openExternal(targetUrl).catch(() => {});
+    return;
+  }
+  window.open(targetUrl, '_blank', 'noopener,noreferrer');
+}
+
 // ================================================================
 // NOTIFICATIONS
 // ================================================================
@@ -958,6 +1018,65 @@ function showSuccess(msg) { showNotification(msg, 'success', 3000); }
 // ================================================================
 function apiFetch(path, options = {}) {
   return fetch(`${API}${path}`, options);
+}
+
+function refreshPrimaryActions() {
+  const urlInput = document.getElementById('urlInput');
+  const btnFetch = document.getElementById('btnFetch');
+  const btnDownload = document.getElementById('btnDownload');
+  const btnQueue = document.getElementById('btnQueue');
+  if (!urlInput || !btnFetch || !btnDownload || !btnQueue) return;
+
+  const hasUrl = urlInput.value.trim().length > 3;
+  const canUseDownloader = !state.tools.checked || state.tools.ytdlp;
+  btnFetch.disabled = !hasUrl || !canUseDownloader || state.fetchInProgress;
+  btnDownload.disabled = !hasUrl || !canUseDownloader;
+  btnQueue.disabled = !hasUrl || !canUseDownloader;
+}
+
+function renderToolSetup() {
+  const card = document.getElementById('toolSetupCard');
+  const copy = document.getElementById('toolSetupCopy');
+  if (!card || !copy || !state.tools.checked) return;
+
+  const missing = [];
+  if (!state.tools.ytdlp) missing.push('yt-dlp.exe');
+  if (!state.tools.ffmpeg) missing.push('ffmpeg.exe');
+  if (!state.tools.ffprobe) missing.push('ffprobe.exe');
+
+  if (!missing.length) {
+    card.style.display = 'none';
+    copy.textContent = '';
+    return;
+  }
+
+  const parts = [];
+  if (!state.tools.ytdlp) {
+    parts.push('Add yt-dlp.exe to bin/ to re-enable metadata fetches and downloads.');
+  }
+  if (!state.tools.ffmpeg || !state.tools.ffprobe) {
+    parts.push('Add both ffmpeg.exe and ffprobe.exe to bin/ so merges and audio conversions can run.');
+  }
+  copy.textContent = `${missing.join(', ')} missing. ${parts.join(' ')}`;
+  card.style.display = 'flex';
+}
+
+function ensureYtdlpReady(message) {
+  if (!state.tools.checked || state.tools.ytdlp) return true;
+  renderToolSetup();
+  showNotification(message, 'warn', 7000);
+  return false;
+}
+
+function formatToolError(message) {
+  const raw = String(message || '').trim();
+  if (/yt-dlp(?:\.exe)? is missing/i.test(raw) || /yt-dlp not found or failed to start/i.test(raw)) {
+    return 'yt-dlp.exe is missing from bin/. Add it, then restart AbyssFetch.';
+  }
+  if (/ffmpeg/i.test(raw) || /ffprobe/i.test(raw)) {
+    return 'ffmpeg.exe and ffprobe.exe must both be present in bin/ for merges and conversions.';
+  }
+  return raw || 'Request failed';
 }
 
 function escHtml(str) {
