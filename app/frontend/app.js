@@ -71,7 +71,7 @@ async function checkStatus() {
     }
     const missingMediaTools = getMissingMediaTools();
     if (missingMediaTools.length) {
-      showNotification(`${missingMediaTools.join(' and ')} ${missingMediaTools.length === 1 ? 'is' : 'are'} missing from bin/. MP4 merges and conversions will not work until ${missingMediaTools.length === 1 ? 'it is' : 'they are'} added.`, 'warn', 8000);
+      showNotification(`Missing from bin/: ${missingMediaTools.join(', ')}. MP4 merges and conversions are disabled.`, 'warn', 8000);
     }
   } catch (_) {
     state.tools = { ytdlp: false, ffmpeg: false, ffprobe: false, checked: true };
@@ -1057,7 +1057,7 @@ function renderToolSetup() {
   if (!state.tools.ffmpeg || !state.tools.ffprobe) {
     parts.push('Add both ffmpeg.exe and ffprobe.exe to bin/ so merges and audio conversions can run.');
   }
-  copy.textContent = `${missing.join(', ')} missing. ${parts.join(' ')}`;
+  copy.textContent = `Missing tools: ${missing.join(', ')}. ${parts.join(' ')}`;
   card.style.display = 'flex';
 }
 
