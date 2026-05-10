@@ -24,15 +24,15 @@ function start(root, port = 57315) {
 
   // Restrict to localhost only
   app.use((req, res, next) => {
-    const host = req.hostname || req.headers.host || '';
-    const ip = req.ip || req.socket.remoteAddress || '';
-    const isLocal =
-      host === 'localhost' ||
-      host === '127.0.0.1' ||
-      ip === '127.0.0.1' ||
-      ip === '::1' ||
-      ip === '::ffff:127.0.0.1';
-    if (!isLocal) {
+    // Server is bound to 127.0.0.1, but double-check connection origin
+    const remoteAddr = req.socket.remoteAddress || '';
+    const isLocalhost = 
+      remoteAddr === '127.0.0.1' ||
+      remoteAddr === '::1' ||
+      remoteAddr === '::ffff:127.0.0.1';
+    
+    if (!isLocalhost) {
+      logger.appLog('warn', 'Rejected non-localhost request', { remoteAddr });
       return res.status(403).json({ error: 'Forbidden' });
     }
     next();
@@ -104,9 +104,10 @@ function start(root, port = 57315) {
     const cfg = config.load(appRoot);
     const normalizedUrl = validator.normalizeYouTubeUrl(url.trim(), validation.type);
     const requestedPlaylistLimit = Number.parseInt(req.body && req.body.playlistLimit, 10);
+    // Clamp playlist limit to 0-500 range
     const playlistLimit = Number.isInteger(requestedPlaylistLimit) && requestedPlaylistLimit >= 0
-      ? requestedPlaylistLimit
-      : cfg.playlistLimit;
+      ? Math.min(requestedPlaylistLimit, 500)
+      : Math.min(cfg.playlistLimit, 500);
     let resolvedOutput = config.resolveFolder(appRoot, cfg.videoFolder);
     if (outputFolder && typeof outputFolder === 'string') {
       const sanitized = validator.sanitizeOutputPath(outputFolder, config.resolveFolder(appRoot, cfg.downloadRoot));
@@ -166,6 +167,17 @@ function start(root, port = 57315) {
     res.json({ success: true });
   });
 
+  // POST /api/queue/clear-completed
+  app.post('/api/queue/clear-completed', (req, res) => {
+    try {
+      queue.clearCompleted();
+      res.json({ success: true });
+    } catch (err) {
+      logger.appLog('error', 'Failed to clear completed jobs', { error: err.message });
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/progress/:id - SSE
   app.get('/api/progress/:id', (req, res) => {
     const { id } = req.params;
@@ -218,7 +230,56 @@ function start(root, port = 57315) {
   app.post('/api/config', (req, res) => {
     try {
       const current = config.load(appRoot);
-      const updated = Object.assign({}, current, req.body || {});
+      const body = req.body || {};
+      
+      // Validate folder paths (must be strings, no dangerous patterns)
+      const folderFields = ['downloadRoot', 'videoFolder', 'audioFolder', 'shortsFolder', 'tempFolder'];
+      for (const field of folderFields) {
+        if (body[field] !== undefined) {
+          if (typeof body[field] !== 'string') {
+            return res.status(400).json({ error: `${field} must be a string` });
+          }
+          // Check for path traversal attempts
+          if (body[field].includes('..') || /[<>:"|?*\x00-\x1f]/g.test(body[field])) {
+            return res.status(400).json({ error: `${field} contains invalid characters` });
+          }
+        }
+      }
+      
+      // Validate format enum
+      if (body.defaultFormat !== undefined) {
+        const validFormats = ['mp4', 'webm', 'mp3', 'm4a'];
+        if (!validFormats.includes(body.defaultFormat)) {
+          return res.status(400).json({ error: 'defaultFormat must be one of: ' + validFormats.join(', ') });
+        }
+      }
+      
+      // Validate quality enum
+      if (body.defaultQuality !== undefined) {
+        const validQualities = ['best', '2160p', '4k', '1440p', '1080p', '720p', '480p', '360p', 'audio only'];
+        if (!validQualities.includes(body.defaultQuality)) {
+          return res.status(400).json({ error: 'defaultQuality must be one of: ' + validQualities.join(', ') });
+        }
+      }
+      
+      // Validate playlist limit (0-500)
+      if (body.playlistLimit !== undefined) {
+        const limit = Number(body.playlistLimit);
+        if (!Number.isInteger(limit) || limit < 0 || limit > 500) {
+          return res.status(400).json({ error: 'playlistLimit must be an integer between 0 and 500' });
+        }
+        body.playlistLimit = limit;
+      }
+      
+      // Validate boolean toggles
+      const boolFields = ['clipboardWatcher', 'saveThumbnail', 'saveInfoJson', 'saveSubtitles', 'advancedMode'];
+      for (const field of boolFields) {
+        if (body[field] !== undefined && typeof body[field] !== 'boolean') {
+          return res.status(400).json({ error: `${field} must be a boolean` });
+        }
+      }
+      
+      const updated = Object.assign({}, current, body);
       config.save(appRoot, updated);
       config.ensureFolders(appRoot);
       res.json({ success: true, config: updated });

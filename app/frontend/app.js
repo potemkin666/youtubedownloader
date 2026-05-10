@@ -275,10 +275,10 @@ function setupUIListeners() {
   // Clear completed
   btnClearCompleted.addEventListener('click', async () => {
     try {
-      const queue = await (await apiFetch('/api/queue')).json();
-      const completed = queue.filter(j => ['completed', 'cancelled', 'failed'].includes(j.status));
-      await Promise.all(completed.map(j => apiFetch(`/api/queue/${j.id}`, { method: 'DELETE' })));
+      const res = await apiFetch('/api/queue/clear-completed', { method: 'POST' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       loadQueue();
+      showNotification('Completed jobs cleared.', 'success', 2000);
     } catch (err) {
       showNotification('Failed to clear completed jobs.', 'error');
     }

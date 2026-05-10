@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const logger = require('./logger');
 const validator = require('./validator');
+const config = require('./config');
 
 // Map jobId -> spawned child process
 const activeProcesses = new Map();
@@ -37,10 +38,24 @@ function checkTool(binDir, toolName) {
       timeout: 8000
     });
     let output = '';
+    let timeoutId = null;
+    
+    // Ensure child is killed if timeout is reached
+    timeoutId = setTimeout(() => {
+      try {
+        child.kill('SIGTERM');
+      } catch (_) { /* already dead */ }
+      resolve({ available: false, version: null });
+    }, 8500);
+    
     child.stdout.on('data', d => { output += d.toString(); });
     child.stderr.on('data', d => { output += d.toString(); });
-    child.on('error', () => resolve({ available: false, version: null }));
+    child.on('error', () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      resolve({ available: false, version: null });
+    });
     child.on('close', (code) => {
+      if (timeoutId) clearTimeout(timeoutId);
       if (code === 0 && output.trim()) {
         const version = output.trim().split('\n')[0].trim();
         resolve({ available: true, version });
@@ -98,10 +113,24 @@ function fetchMetadata(url, binDir, options = {}) {
 
     let stdout = '';
     let stderr = '';
+    let timeoutId = null;
+    
+    // Force kill after 35 seconds as a safety
+    timeoutId = setTimeout(() => {
+      try {
+        child.kill('SIGTERM');
+        setTimeout(() => {
+          try { child.kill('SIGKILL'); } catch (_) { /* already dead */ }
+        }, 2000);
+      } catch (_) { /* already dead */ }
+      reject(new Error('Metadata fetch timed out after 35 seconds'));
+    }, 35000);
+    
     child.stdout.on('data', d => { stdout += d.toString(); });
     child.stderr.on('data', d => { stderr += d.toString(); });
 
     child.on('error', (err) => {
+      if (timeoutId) clearTimeout(timeoutId);
       if (isMissingBinaryError(err)) {
         return reject(new Error(getMissingBinaryMessage(binDir, 'yt-dlp')));
       }
@@ -109,6 +138,7 @@ function fetchMetadata(url, binDir, options = {}) {
     });
 
     child.on('close', (code) => {
+      if (timeoutId) clearTimeout(timeoutId);
       if (code !== 0) {
         const errText = stderr.trim() || `yt-dlp exited with code ${code}`;
         return reject(new Error(errText));
@@ -237,12 +267,12 @@ function buildArgs(job, cfg, appRoot) {
   }
 
   // Output template
-  const outputPath = job.outputPath || require('./config').resolveFolder(appRoot, cfg.videoFolder);
+  const outputPath = job.outputPath || config.resolveFolder(appRoot, cfg.videoFolder);
   const outputTemplate = path.join(outputPath, '%(title)s [%(id)s].%(ext)s');
   args.push('-o', outputTemplate);
 
   // Temp dir
-  const tempDir = require('./config').resolveFolder(appRoot, cfg.tempFolder);
+  const tempDir = config.resolveFolder(appRoot, cfg.tempFolder);
   args.push('--paths', `temp:${tempDir}`);
 
   // Progress output
@@ -253,10 +283,9 @@ function buildArgs(job, cfg, appRoot) {
   }
 
   // FFmpeg location if available
-  const { path: pathModule } = { path: require('path') };
-  const binDir = pathModule.join(appRoot, 'bin');
+  const binDir = path.join(appRoot, 'bin');
   const ffmpegBin = resolveBin(binDir, 'ffmpeg');
-  if (require('fs').existsSync(ffmpegBin)) {
+  if (fs.existsSync(ffmpegBin)) {
     args.push('--ffmpeg-location', binDir);
   }
 

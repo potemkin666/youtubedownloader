@@ -178,4 +178,4 @@ function sanitizeOutputPath(outputPath, downloadRoot) {
   return resolvedOutput;
 }
 
-module.exports = { validateYouTubeUrl, normalizeYouTubeUrl, sanitizeFilename, sanitizeOutputPath };
+module.exports = { validateYouTubeUrl, normalizeYouTubeUrl, sanitizeOutputPath };
