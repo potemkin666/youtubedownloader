@@ -80,7 +80,9 @@ function ensureFolders(appRoot) {
       if (!fs.existsSync(resolved)) {
         fs.mkdirSync(resolved, { recursive: true });
       }
-    } catch (_) { /* non-fatal */ }
+    } catch (_) {
+      /* non-fatal */
+    }
   }
   // Also ensure portable/logs and portable/cache
   for (const subdir of ['portable/logs', 'portable/cache']) {
@@ -89,7 +91,9 @@ function ensureFolders(appRoot) {
       if (!fs.existsSync(resolved)) {
         fs.mkdirSync(resolved, { recursive: true });
       }
-    } catch (_) { /* non-fatal */ }
+    } catch (_) {
+      /* non-fatal */
+    }
   }
 }
 

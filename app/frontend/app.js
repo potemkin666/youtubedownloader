@@ -64,16 +64,28 @@ async function checkStatus() {
     };
 
     setPillStatus(pillYtdlp, data.ytdlp && data.ytdlp.available, data.ytdlp && data.ytdlp.version);
-    setPillStatus(pillFfmpeg, data.ffmpeg && data.ffmpeg.available, data.ffmpeg && data.ffmpeg.version);
+    setPillStatus(
+      pillFfmpeg,
+      data.ffmpeg && data.ffmpeg.available,
+      data.ffmpeg && data.ffmpeg.version
+    );
     renderToolSetup();
     refreshPrimaryActions();
 
     if (!state.tools.ytdlp) {
-      showNotification(`${getToolBinaryLabel('yt-dlp')} is missing from bin/. Fetch and downloads stay disabled until you add it.`, 'warn', 8000);
+      showNotification(
+        `${getToolBinaryLabel('yt-dlp')} is missing from bin/. Fetch and downloads stay disabled until you add it.`,
+        'warn',
+        8000
+      );
     }
     const missingMediaTools = getMissingMediaTools();
     if (missingMediaTools.length) {
-      showNotification(`Missing from bin/: ${missingMediaTools.join(', ')}. MP4 merges and conversions are disabled.`, 'warn', 8000);
+      showNotification(
+        `Missing from bin/: ${missingMediaTools.join(', ')}. MP4 merges and conversions are disabled.`,
+        'warn',
+        8000
+      );
     }
   } catch (_) {
     state.tools = { ytdlp: false, ffmpeg: false, ffprobe: false, checked: true };
@@ -200,8 +212,10 @@ function setupUIListeners() {
   });
 
   formatSelect.addEventListener('change', () => {
-    if ((formatSelect.value === 'mp3' || formatSelect.value === 'm4a') &&
-        qualitySelect.value !== 'audio only') {
+    if (
+      (formatSelect.value === 'mp3' || formatSelect.value === 'm4a') &&
+      qualitySelect.value !== 'audio only'
+    ) {
       qualitySelect.value = 'audio only';
     }
   });
@@ -275,10 +289,10 @@ function setupUIListeners() {
   // Clear completed
   btnClearCompleted.addEventListener('click', async () => {
     try {
-      const queue = await (await apiFetch('/api/queue')).json();
-      const completed = queue.filter(j => ['completed', 'cancelled', 'failed'].includes(j.status));
-      await Promise.all(completed.map(j => apiFetch(`/api/queue/${j.id}`, { method: 'DELETE' })));
+      const res = await apiFetch('/api/queue/clear-completed', { method: 'POST' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       loadQueue();
+      showNotification('Completed jobs cleared.', 'success', 2000);
     } catch (err) {
       showNotification('Failed to clear completed jobs.', 'error');
     }
@@ -288,7 +302,8 @@ function setupUIListeners() {
   if (btnPlaylistConfirm) {
     btnPlaylistConfirm.addEventListener('click', () => {
       const rawCount = parseInt(document.getElementById('playlistItemCount').value, 10);
-      const count = Number.isInteger(rawCount) && rawCount >= 0 ? rawCount : getPreferredBatchLimit();
+      const count =
+        Number.isInteger(rawCount) && rawCount >= 0 ? rawCount : getPreferredBatchLimit();
       const dialog = document.getElementById('playlistDialog');
       const url = dialog.dataset.pendingUrl;
       if (url) {
@@ -311,7 +326,12 @@ function setupUIListeners() {
 // ================================================================
 async function fetchVideoInfo(url) {
   if (!url || state.fetchInProgress) return;
-  if (!ensureYtdlpReady(`Metadata fetch is unavailable until ${getToolBinaryLabel('yt-dlp')} is added to bin/.`)) return;
+  if (
+    !ensureYtdlpReady(
+      `Metadata fetch is unavailable until ${getToolBinaryLabel('yt-dlp')} is added to bin/.`
+    )
+  )
+    return;
 
   // Basic pre-flight
   if (!isLikelyYouTubeUrl(url)) {
@@ -346,7 +366,11 @@ async function fetchVideoInfo(url) {
     refreshPrimaryActions();
     if (isBatchSource(url, metadata)) {
       const batchLabel = getBatchLabel(metadata, url);
-      showNotification(`${batchLabel} detected. Choose Download or Add to Queue to batch-fetch videos.`, 'info', 5000);
+      showNotification(
+        `${batchLabel} detected. Choose Download or Add to Queue to batch-fetch videos.`,
+        'info',
+        5000
+      );
     }
   } catch (err) {
     showNotification(`Fetch failed: ${formatToolError(err.message)}`, 'error');
@@ -384,11 +408,14 @@ function renderPreview(meta) {
 
   if (meta.thumbnail) {
     thumb.src = meta.thumbnail;
-    thumb.onerror = () => { thumb.style.display = 'none'; };
+    thumb.onerror = () => {
+      thumb.style.display = 'none';
+    };
   }
 
   title.textContent = meta.title || 'Unknown Title';
-  channel.textContent = meta.channel || (meta.requestedType === 'channel' ? 'Channel batch download' : '');
+  channel.textContent =
+    meta.channel || (meta.requestedType === 'channel' ? 'Channel batch download' : '');
   duration.textContent = meta.durationString || formatDuration(meta.duration);
 
   let type = 'VIDEO';
@@ -407,7 +434,7 @@ function renderPreview(meta) {
   }
   if (meta.upload_date && meta.upload_date.length === 8) {
     const d = meta.upload_date;
-    date.textContent = `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`;
+    date.textContent = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
   } else {
     date.textContent = '';
   }
@@ -478,7 +505,12 @@ function getPreferredBatchLimit() {
 }
 
 async function addToQueue(url, options = {}) {
-  if (!ensureYtdlpReady(`Downloads are unavailable until ${getToolBinaryLabel('yt-dlp')} is added to bin/.`)) return;
+  if (
+    !ensureYtdlpReady(
+      `Downloads are unavailable until ${getToolBinaryLabel('yt-dlp')} is added to bin/.`
+    )
+  )
+    return;
   try {
     const res = await apiFetch('/api/download', {
       method: 'POST',
@@ -539,7 +571,9 @@ function connectSSE(jobId) {
         // Refresh full queue after a moment
         setTimeout(loadQueue, 500);
       }
-    } catch (_) { /* ignore malformed */ }
+    } catch (_) {
+      /* ignore malformed */
+    }
   };
 
   evtSource.onerror = () => {
@@ -613,12 +647,14 @@ async function loadQueue() {
     if (el) el.textContent = `${count} item${count !== 1 ? 's' : ''}`;
 
     // Connect SSE for active jobs
-    items.forEach(job => {
+    items.forEach((job) => {
       if (job.status === 'downloading' || job.status === 'queued') {
         connectSSE(job.id);
       }
     });
-  } catch (_) { /* backend might not be ready */ }
+  } catch (_) {
+    /* backend might not be ready */
+  }
 }
 
 function renderQueue(items) {
@@ -629,7 +665,7 @@ function renderQueue(items) {
   if (!items || items.length === 0) {
     emptyEl.style.display = 'flex';
     // Clear non-empty items
-    Array.from(list.querySelectorAll('.queue-item')).forEach(el => el.remove());
+    Array.from(list.querySelectorAll('.queue-item')).forEach((el) => el.remove());
     return;
   }
 
@@ -637,19 +673,19 @@ function renderQueue(items) {
 
   // Update existing / add new items
   const existingIds = new Set(
-    Array.from(list.querySelectorAll('.queue-item')).map(el => el.dataset.jobId)
+    Array.from(list.querySelectorAll('.queue-item')).map((el) => el.dataset.jobId)
   );
 
   // Remove stale items
-  existingIds.forEach(id => {
-    if (!items.find(j => j.id === id)) {
+  existingIds.forEach((id) => {
+    if (!items.find((j) => j.id === id)) {
       const el = document.getElementById(`job-${id}`);
       if (el) el.remove();
     }
   });
 
   // Add/update items
-  items.forEach((job, idx) => {
+  items.forEach((job, _idx) => {
     let item = document.getElementById(`job-${job.id}`);
     if (!item) {
       item = createQueueItemEl(job);
@@ -677,8 +713,8 @@ function createQueueItemEl(job) {
         <span class="queue-status-badge ${job.status || 'queued'}">${(job.status || 'queued').toUpperCase()}</span>
         <div class="queue-item-actions">
           ${job.status === 'completed' ? `<button class="btn btn-xs btn-ghost open-folder-btn" title="Open output folder">📂</button>` : ''}
-          ${['queued','downloading'].includes(job.status) ? `<button class="btn btn-xs btn-danger cancel-btn" title="Cancel">✕</button>` : ''}
-          ${['completed','failed','cancelled'].includes(job.status) ? `<button class="btn btn-xs btn-ghost remove-btn" title="Remove">✕</button>` : ''}
+          ${['queued', 'downloading'].includes(job.status) ? `<button class="btn btn-xs btn-danger cancel-btn" title="Cancel">✕</button>` : ''}
+          ${['completed', 'failed', 'cancelled'].includes(job.status) ? `<button class="btn btn-xs btn-ghost remove-btn" title="Remove">✕</button>` : ''}
         </div>
       </div>
     </div>
@@ -767,7 +803,9 @@ async function watchClipboard() {
       state.clipboardUrl = trimmed;
       showClipboardAlert(trimmed);
     }
-  } catch (_) { /* permission denied or no focus */ }
+  } catch (_) {
+    /* permission denied or no focus */
+  }
 }
 
 function showClipboardAlert(url) {
@@ -806,9 +844,7 @@ function setupDropZone() {
     if (overlay) overlay.style.display = 'none';
 
     const files = Array.from(e.dataTransfer.files || []);
-    const textFile = files.find(f =>
-      f.name.endsWith('.txt') || f.type === 'text/plain'
-    );
+    const textFile = files.find((f) => f.name.endsWith('.txt') || f.type === 'text/plain');
 
     if (textFile) {
       await handleDropZone(textFile);
@@ -819,7 +855,11 @@ function setupDropZone() {
         addToQueue(text.trim(), getDownloadOptions());
         showNotification('URL added to queue from drag.', 'info', 3000);
       } else {
-        showNotification('Drop a .txt file with YouTube URLs, or drag a URL directly.', 'warn', 4000);
+        showNotification(
+          'Drop a .txt file with YouTube URLs, or drag a URL directly.',
+          'warn',
+          4000
+        );
       }
     }
   });
@@ -830,7 +870,10 @@ async function handleDropZone(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target.result || '';
-      const lines = content.split('\n').map(l => l.trim()).filter(l => isLikelyYouTubeUrl(l));
+      const lines = content
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => isLikelyYouTubeUrl(l));
       if (lines.length === 0) {
         showNotification('No valid YouTube URLs found in the file.', 'warn');
         return resolve();
@@ -839,8 +882,12 @@ async function handleDropZone(file) {
         `Found ${lines.length} YouTube URL${lines.length > 1 ? 's' : ''} in the file.\nAdd all to download queue?`
       );
       if (confirmed) {
-        lines.forEach(url => addToQueue(url, getDownloadOptions()));
-        showNotification(`Added ${lines.length} URL${lines.length > 1 ? 's' : ''} to queue.`, 'success', 3000);
+        lines.forEach((url) => addToQueue(url, getDownloadOptions()));
+        showNotification(
+          `Added ${lines.length} URL${lines.length > 1 ? 's' : ''} to queue.`,
+          'success',
+          3000
+        );
       }
       resolve();
     };
@@ -888,7 +935,8 @@ function applySettingsToUI() {
   if (formatSelect && cfg.defaultFormat) formatSelect.value = cfg.defaultFormat;
   if (qualitySelect && cfg.defaultQuality) qualitySelect.value = cfg.defaultQuality;
   if (document.getElementById('playlistLimit')) {
-    document.getElementById('playlistLimit').value = cfg.playlistLimit != null ? cfg.playlistLimit : 10;
+    document.getElementById('playlistLimit').value =
+      cfg.playlistLimit != null ? cfg.playlistLimit : 10;
   }
 }
 
@@ -1025,9 +1073,15 @@ function showNotification(message, type = 'info', autoDismiss = 5000) {
   }
 }
 
-// Legacy helpers
-function showError(msg) { showNotification(msg, 'error'); }
-function showSuccess(msg) { showNotification(msg, 'success', 3000); }
+// Legacy helpers (kept for backward compatibility)
+// eslint-disable-next-line no-unused-vars
+function showError(msg) {
+  showNotification(msg, 'error');
+}
+// eslint-disable-next-line no-unused-vars
+function showSuccess(msg) {
+  showNotification(msg, 'success', 3000);
+}
 
 // ================================================================
 // UTILITY FUNCTIONS
@@ -1067,10 +1121,14 @@ function renderToolSetup() {
 
   const parts = [];
   if (!state.tools.ytdlp) {
-    parts.push(`Add ${getToolBinaryLabel('yt-dlp')} to bin/ to re-enable metadata fetches and downloads.`);
+    parts.push(
+      `Add ${getToolBinaryLabel('yt-dlp')} to bin/ to re-enable metadata fetches and downloads.`
+    );
   }
   if (!state.tools.ffmpeg || !state.tools.ffprobe) {
-    parts.push(`Add both ${getToolBinaryLabel('ffmpeg')} and ${getToolBinaryLabel('ffprobe')} to bin/ so merges and audio conversions can run.`);
+    parts.push(
+      `Add both ${getToolBinaryLabel('ffmpeg')} and ${getToolBinaryLabel('ffprobe')} to bin/ so merges and audio conversions can run.`
+    );
   }
   copy.textContent = `Missing tools: ${missing.join(', ')}. ${parts.join(' ')}`;
   card.style.display = 'flex';
@@ -1085,10 +1143,16 @@ function ensureYtdlpReady(message) {
 
 function formatToolError(message) {
   const raw = String(message || '').trim();
-  if (/yt-dlp(?:\.exe)? is missing/i.test(raw) || /yt-dlp not found or failed to start/i.test(raw)) {
+  if (
+    /yt-dlp(?:\.exe)? is missing/i.test(raw) ||
+    /yt-dlp not found or failed to start/i.test(raw)
+  ) {
     return `${getToolBinaryLabel('yt-dlp')} is missing from bin/. Add it, then restart AbyssFetch.`;
   }
-  if (/(ffmpeg|ffprobe)(?:\.exe)?\s+is missing/i.test(raw) || /(ffmpeg|ffprobe).*(not found|failed to start)/i.test(raw)) {
+  if (
+    /(ffmpeg|ffprobe)(?:\.exe)?\s+is missing/i.test(raw) ||
+    /(ffmpeg|ffprobe).*(not found|failed to start)/i.test(raw)
+  ) {
     return `${getToolBinaryLabel('ffmpeg')} and ${getToolBinaryLabel('ffprobe')} must both be present in bin/ for merges and conversions.`;
   }
   return raw || 'Request failed';
@@ -1124,8 +1188,8 @@ function formatDuration(seconds) {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  return `${m}:${String(s).padStart(2,'0')}`;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 function formatNumber(n) {

@@ -68,7 +68,7 @@ class QueueManager extends EventEmitter {
   }
 
   remove(id) {
-    this.jobs = this.jobs.filter(j => j.id !== id);
+    this.jobs = this.jobs.filter((j) => j.id !== id);
     this.save();
   }
 
@@ -87,7 +87,7 @@ class QueueManager extends EventEmitter {
   }
 
   getById(id) {
-    return this.jobs.find(j => j.id === id) || null;
+    return this.jobs.find((j) => j.id === id) || null;
   }
 
   updateProgress(id, progressData) {
@@ -110,13 +110,13 @@ class QueueManager extends EventEmitter {
   }
 
   clearCompleted() {
-    this.jobs = this.jobs.filter(j => !['completed', 'cancelled', 'failed'].includes(j.status));
+    this.jobs = this.jobs.filter((j) => !['completed', 'cancelled', 'failed'].includes(j.status));
     this.save();
   }
 
   processQueue() {
     if (this._activeJobId) return;
-    const next = this.jobs.find(j => j.status === 'queued');
+    const next = this.jobs.find((j) => j.status === 'queued');
     if (!next) return;
 
     this._activeJobId = next.id;

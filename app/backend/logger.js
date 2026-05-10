@@ -33,7 +33,9 @@ function init(appRoot) {
   const logsDir = path.join(appRoot, 'portable', 'logs');
   try {
     if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
-  } catch (_) { /* non-fatal */ }
+  } catch (_) {
+    /* non-fatal */
+  }
 
   const logFormat = w.format.combine(
     w.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -97,7 +99,9 @@ function appLog(level, message, meta = {}) {
 function downloadLog(level, message, meta = {}) {
   const safeMeta = sanitizeMeta(meta);
   if (initialized && downloadLogger) {
-    downloadLogger[level] ? downloadLogger[level](message, safeMeta) : downloadLogger.info(message, safeMeta);
+    downloadLogger[level]
+      ? downloadLogger[level](message, safeMeta)
+      : downloadLogger.info(message, safeMeta);
   } else {
     const logFn = console[level] || console.log;
     logFn(`[Downloads] ${level.toUpperCase()}: ${message}`, safeMeta);
@@ -110,9 +114,16 @@ function sanitizeMeta(meta) {
   for (const [key, value] of Object.entries(meta)) {
     // Never log URL values or sensitive credential fields
     const lk = key.toLowerCase();
-    if (lk === 'url' || lk.includes('cookie') || lk.includes('token') ||
-        lk.includes('password') || lk.includes('auth') || lk.includes('secret') ||
-        lk.includes('apikey') || lk.includes('header')) {
+    if (
+      lk === 'url' ||
+      lk.includes('cookie') ||
+      lk.includes('token') ||
+      lk.includes('password') ||
+      lk.includes('auth') ||
+      lk.includes('secret') ||
+      lk.includes('apikey') ||
+      lk.includes('header')
+    ) {
       safe[key] = '[REDACTED]';
     } else {
       safe[key] = value;

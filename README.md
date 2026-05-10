@@ -21,8 +21,8 @@ The launcher will automatically run `npm install` the first time on each machine
 ### Developer Mode
 
 ```bash
-git clone https://github.com/yourrepo/abyssfetch
-cd abyssfetch
+git clone https://github.com/potemkin666/youtubedownloader
+cd youtubedownloader
 npm install
 npm start
 ```
@@ -51,7 +51,6 @@ abyssfetch/
 ├── portable/
 │   ├── config.json           ← Your settings (edit freely)
 │   ├── queue.json            ← Download queue state
-│   ├── history.json          ← Download history
 │   └── logs/                 ← app.log, downloads.log
 ├── downloads/
 │   ├── video/                ← MP4/WEBM downloads
@@ -108,7 +107,7 @@ abyssfetch/
 
 ```bash
 # 1. Navigate to the app folder
-cd /path/to/abyssfetch
+cd /path/to/youtubedownloader
 
 # 2. Install Node.js once if needed, then launch
 runme.cmd

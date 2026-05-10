@@ -118,7 +118,11 @@ function validateYouTubeUrl(url) {
     return { valid: true, type: 'channel', error: null };
   }
 
-  return { valid: false, type: null, error: 'URL must point to a video, shorts, playlist, or channel' };
+  return {
+    valid: false,
+    type: null,
+    error: 'URL must point to a video, shorts, playlist, or channel'
+  };
 }
 
 function normalizeYouTubeUrl(url, type = null) {
@@ -142,7 +146,9 @@ function normalizeYouTubeUrl(url, type = null) {
 
 /**
  * Sanitize a filename by replacing invalid characters.
+ * Currently not exported but kept for potential future use.
  */
+// eslint-disable-next-line no-unused-vars
 function sanitizeFilename(filename) {
   if (!filename || typeof filename !== 'string') return 'download';
   let safe = filename
@@ -178,4 +184,4 @@ function sanitizeOutputPath(outputPath, downloadRoot) {
   return resolvedOutput;
 }
 
-module.exports = { validateYouTubeUrl, normalizeYouTubeUrl, sanitizeFilename, sanitizeOutputPath };
+module.exports = { validateYouTubeUrl, normalizeYouTubeUrl, sanitizeOutputPath };
