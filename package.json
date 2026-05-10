@@ -5,7 +5,12 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint . --ext .js --ignore-pattern 'node_modules/*' --ignore-pattern 'dist/*'",
+    "lint:fix": "eslint . --ext .js --fix --ignore-pattern 'node_modules/*' --ignore-pattern 'dist/*'",
+    "format": "prettier --write '**/*.{js,json,md}' --ignore-path .gitignore"
   },
   "author": "AbyssFetch",
   "license": "MIT",
@@ -16,7 +21,23 @@
   },
   "devDependencies": {
     "electron": "^41.5.0",
-    "electron-builder": "^26.8.1"
+    "electron-builder": "^26.8.1",
+    "eslint": "^10.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "jest": "^30.4.2",
+    "prettier": "^3.8.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/__tests__/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "app/backend/**/*.js",
+      "!app/backend/server.js",
+      "!**/node_modules/**"
+    ]
   },
   "build": {
     "appId": "com.abyssfetch.app",
