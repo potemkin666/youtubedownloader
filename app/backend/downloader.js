@@ -39,17 +39,23 @@ function checkTool(binDir, toolName) {
     });
     let output = '';
     let timeoutId = null;
-    
+
     // Ensure child is killed if timeout is reached
     timeoutId = setTimeout(() => {
       try {
         child.kill('SIGTERM');
-      } catch (_) { /* already dead */ }
+      } catch (_) {
+        /* already dead */
+      }
       resolve({ available: false, version: null });
     }, 8500);
-    
-    child.stdout.on('data', d => { output += d.toString(); });
-    child.stderr.on('data', d => { output += d.toString(); });
+
+    child.stdout.on('data', (d) => {
+      output += d.toString();
+    });
+    child.stderr.on('data', (d) => {
+      output += d.toString();
+    });
     child.on('error', () => {
       if (timeoutId) clearTimeout(timeoutId);
       resolve({ available: false, version: null });
@@ -97,13 +103,7 @@ function fetchMetadata(url, binDir, options = {}) {
           '--skip-download',
           normalizedUrl
         ]
-      : [
-          '--dump-json',
-          '--no-playlist',
-          '--no-warnings',
-          '--skip-download',
-          normalizedUrl
-        ];
+      : ['--dump-json', '--no-playlist', '--no-warnings', '--skip-download', normalizedUrl];
 
     const child = spawn(bin, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -114,20 +114,30 @@ function fetchMetadata(url, binDir, options = {}) {
     let stdout = '';
     let stderr = '';
     let timeoutId = null;
-    
+
     // Force kill after 35 seconds as a safety
     timeoutId = setTimeout(() => {
       try {
         child.kill('SIGTERM');
         setTimeout(() => {
-          try { child.kill('SIGKILL'); } catch (_) { /* already dead */ }
+          try {
+            child.kill('SIGKILL');
+          } catch (_) {
+            /* already dead */
+          }
         }, 2000);
-      } catch (_) { /* already dead */ }
+      } catch (_) {
+        /* already dead */
+      }
       reject(new Error('Metadata fetch timed out after 35 seconds'));
     }, 35000);
-    
-    child.stdout.on('data', d => { stdout += d.toString(); });
-    child.stderr.on('data', d => { stderr += d.toString(); });
+
+    child.stdout.on('data', (d) => {
+      stdout += d.toString();
+    });
+    child.stderr.on('data', (d) => {
+      stderr += d.toString();
+    });
 
     child.on('error', (err) => {
       if (timeoutId) clearTimeout(timeoutId);
@@ -223,21 +233,29 @@ function buildArgs(job, cfg, appRoot) {
     args.push('-f', 'bestaudio[ext=m4a]/bestaudio', '--audio-quality', '0');
   } else if (format === 'webm') {
     if (quality === 'best' || quality === 'audio only') {
-      args.push('-f', 'bestvideo[ext=webm]+bestaudio[ext=webm]/best[ext=webm]/best', '--merge-output-format', 'webm');
+      args.push(
+        '-f',
+        'bestvideo[ext=webm]+bestaudio[ext=webm]/best[ext=webm]/best',
+        '--merge-output-format',
+        'webm'
+      );
     } else {
       const h = qualityToHeight(quality);
       args.push(
         '-f',
         `bestvideo[height<=${h}][ext=webm]+bestaudio[ext=webm]/best[height<=${h}][ext=webm]/best[height<=${h}]`,
-        '--merge-output-format', 'webm'
+        '--merge-output-format',
+        'webm'
       );
     }
   } else {
     // Default: mp4
     if (quality === 'best') {
       args.push(
-        '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        '--merge-output-format', 'mp4'
+        '-f',
+        'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        '--merge-output-format',
+        'mp4'
       );
     } else if (quality === 'audio only') {
       args.push('-f', 'bestaudio[ext=m4a]/bestaudio', '--audio-quality', '0');
@@ -246,7 +264,8 @@ function buildArgs(job, cfg, appRoot) {
       args.push(
         '-f',
         `bestvideo[height<=${h}][ext=mp4]+bestaudio[ext=m4a]/best[height<=${h}][ext=mp4]/best[height<=${h}]`,
-        '--merge-output-format', 'mp4'
+        '--merge-output-format',
+        'mp4'
       );
     }
   }
@@ -294,12 +313,18 @@ function buildArgs(job, cfg, appRoot) {
 
 function qualityToHeight(quality) {
   const map = {
-    '2160p': 2160, '4k': 2160,
-    '1440p': 1440, '1440': 1440,
-    '1080p': 1080, '1080': 1080,
-    '720p': 720, '720': 720,
-    '480p': 480, '480': 480,
-    '360p': 360, '360': 360
+    '2160p': 2160,
+    '4k': 2160,
+    '1440p': 1440,
+    1440: 1440,
+    '1080p': 1080,
+    1080: 1080,
+    '720p': 720,
+    720: 720,
+    '480p': 480,
+    480: 480,
+    '360p': 360,
+    360: 360
   };
   return map[quality] || 1080;
 }
@@ -313,7 +338,11 @@ function startDownload(job, cfg, appRoot, onProgress, onComplete, onError) {
   const args = buildArgs(job, cfg, appRoot);
   args.push(validator.normalizeYouTubeUrl(job.url, job.urlType));
 
-  logger.appLog('info', 'Starting download', { jobId: job.id, format: job.format, quality: job.quality });
+  logger.appLog('info', 'Starting download', {
+    jobId: job.id,
+    format: job.format,
+    quality: job.quality
+  });
 
   let child;
   try {
@@ -347,8 +376,9 @@ function startDownload(job, cfg, appRoot, onProgress, onComplete, onError) {
       }
 
       // Detect output filename
-      const destMatch = trimmed.match(/^\[download\] Destination: (.+)$/) ||
-                        trimmed.match(/^\[Merger\] Merging formats into "(.+)"$/);
+      const destMatch =
+        trimmed.match(/^\[download\] Destination: (.+)$/) ||
+        trimmed.match(/^\[Merger\] Merging formats into "(.+)"$/);
       if (destMatch) {
         lastOutputFile = destMatch[1];
       }
@@ -395,7 +425,7 @@ function parseProgress(line) {
   const speedMatch = line.match(/at\s+([\d.]+\s*\w+\/s)/);
   const etaMatch = line.match(/ETA\s+([\d:]+)/);
   const sizeMatch = line.match(/of\s+~?\s*([\d.]+\s*\w+iB)/);
-  const downloadedMatch = line.match(/(\d+\.?\d*)\s*\w+iB\s+at/);
+  // Note: downloadedMatch could be used for showing downloaded amount
 
   if (!percentMatch) return null;
 
@@ -426,12 +456,25 @@ function cancelDownload(jobId) {
       child.kill('SIGTERM');
       setTimeout(() => {
         if (activeProcesses.has(jobId)) {
-          try { child.kill('SIGKILL'); } catch (_) { /* already dead */ }
+          try {
+            child.kill('SIGKILL');
+          } catch (_) {
+            /* already dead */
+          }
         }
       }, 3000);
-    } catch (_) { /* already dead */ }
+    } catch (_) {
+      /* already dead */
+    }
     activeProcesses.delete(jobId);
   }
 }
 
-module.exports = { checkTool, fetchMetadata, buildArgs, startDownload, parseProgress, cancelDownload };
+module.exports = {
+  checkTool,
+  fetchMetadata,
+  buildArgs,
+  startDownload,
+  parseProgress,
+  cancelDownload
+};

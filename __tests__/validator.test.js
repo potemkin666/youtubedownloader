@@ -1,6 +1,10 @@
 'use strict';
 
-const { validateYouTubeUrl, normalizeYouTubeUrl, sanitizeOutputPath } = require('../app/backend/validator');
+const {
+  validateYouTubeUrl,
+  normalizeYouTubeUrl,
+  sanitizeOutputPath
+} = require('../app/backend/validator');
 
 describe('validator.js', () => {
   describe('validateYouTubeUrl', () => {
@@ -72,7 +76,9 @@ describe('validator.js', () => {
     });
 
     test('should handle watch URL with playlist (mixed type)', () => {
-      const result = validateYouTubeUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLtest123');
+      const result = validateYouTubeUrl(
+        'https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLtest123'
+      );
       expect(result.valid).toBe(true);
       expect(result.type).toBe('playlist');
     });

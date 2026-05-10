@@ -5,9 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 const isPacked = app.isPackaged;
-const APP_ROOT = isPacked
-  ? path.dirname(process.execPath)
-  : app.getAppPath();
+const APP_ROOT = isPacked ? path.dirname(process.execPath) : app.getAppPath();
 
 global.APP_ROOT = APP_ROOT;
 
@@ -29,7 +27,9 @@ function createWindow() {
     } else if (!isPacked) {
       console.log('[AbyssFetch] Icon not found at assets/icon.ico (optional)');
     }
-  } catch (_) { /* icon is optional */ }
+  } catch (_) {
+    /* icon is optional */
+  }
 
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -44,7 +44,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
       devTools: !isPacked
     },
     titleBarStyle: 'default',
@@ -97,10 +97,25 @@ app.on('window-all-closed', () => {
 // IPC: open a folder in the OS file explorer
 ipcMain.handle('openFolder', async (_event, folderPath) => {
   try {
+    // Security: Only allow opening folders within APP_ROOT to prevent arbitrary path access
+    if (!folderPath || typeof folderPath !== 'string') {
+      return { success: false, error: 'Invalid folder path' };
+    }
+
     const resolved = path.resolve(folderPath);
+    const appRootResolved = path.resolve(APP_ROOT);
+
+    // Check if the resolved path is within APP_ROOT
+    const relative = path.relative(appRootResolved, resolved);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      return { success: false, error: 'Folder path must be within application directory' };
+    }
+
+    // Create folder if it doesn't exist
     if (!fs.existsSync(resolved)) {
       fs.mkdirSync(resolved, { recursive: true });
     }
+
     await shell.openPath(resolved);
     return { success: true };
   } catch (err) {
@@ -111,7 +126,45 @@ ipcMain.handle('openFolder', async (_event, folderPath) => {
 // IPC: open an external URL in the OS browser
 ipcMain.handle('openExternal', async (_event, targetUrl) => {
   try {
-    await shell.openExternal(String(targetUrl || ''));
+    // Security: Only allow https: URLs from expected domains
+    if (!targetUrl || typeof targetUrl !== 'string') {
+      return { success: false, error: 'Invalid URL' };
+    }
+
+    const trimmed = targetUrl.trim();
+
+    // Parse and validate URL
+    let parsed;
+    try {
+      parsed = new URL(trimmed);
+    } catch (_) {
+      return { success: false, error: 'Invalid URL format' };
+    }
+
+    // Only allow https: protocol
+    if (parsed.protocol !== 'https:') {
+      return { success: false, error: 'Only HTTPS URLs are allowed' };
+    }
+
+    // Whitelist of allowed domains for external links
+    const ALLOWED_DOMAINS = [
+      'youtube.com',
+      'www.youtube.com',
+      'm.youtube.com',
+      'youtu.be',
+      'music.youtube.com',
+      'github.com',
+      'www.github.com'
+    ];
+
+    const hostname = parsed.hostname.toLowerCase();
+    const isAllowed = ALLOWED_DOMAINS.includes(hostname);
+
+    if (!isAllowed) {
+      return { success: false, error: 'Domain not in whitelist' };
+    }
+
+    await shell.openExternal(parsed.toString());
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
@@ -121,4 +174,9 @@ ipcMain.handle('openExternal', async (_event, targetUrl) => {
 // IPC: return the app root path
 ipcMain.handle('getAppRoot', async () => {
   return APP_ROOT;
+});
+
+// IPC: return the platform
+ipcMain.handle('getPlatform', async () => {
+  return process.platform;
 });
